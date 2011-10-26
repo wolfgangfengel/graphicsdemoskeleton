@@ -37,6 +37,6 @@ output\Window.obj: \
 	Window.c
 	$(CC) $(CCFLAGS) "$!" -Fo"$@"
 
-.SILENT:
-
 .EXCLUDEDFILES:
+
+.SILENT:

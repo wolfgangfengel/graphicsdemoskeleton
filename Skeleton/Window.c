@@ -85,7 +85,7 @@ __declspec( naked )  void __cdecl winmain()
 	temp.OutputWindow = hWnd;
 
  	D3D11CreateDeviceAndSwapChain(
-			NULL,
+			NULL,					// might fail with two adapters in machine
 			D3D_DRIVER_TYPE_HARDWARE,
 			NULL, 
 			D3D11_CREATE_DEVICE_DEBUG,
