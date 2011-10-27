@@ -11,7 +11,7 @@
 		</category>
 		<category name="Breakpoints">
 			<category name="Breakpoint1">
-				<property name="Line" type="integer">333</property>
+				<property name="Line" type="integer">366</property>
 				<property name="Enabled" type="integer">1</property>
 				<property name="HitCount" type="integer">0</property>
 				<property name="Expression" type="string"></property>
@@ -20,10 +20,10 @@
 	</category>
 	<category name="qjulia4D.hlsl">
 		<category name="Window">
-			<property name="Left" type="integer">0</property>
-			<property name="Top" type="integer">0</property>
-			<property name="Right" type="integer">979</property>
-			<property name="Bottom" type="integer">437</property>
+			<property name="Left" type="integer">25</property>
+			<property name="Top" type="integer">25</property>
+			<property name="Right" type="integer">1225</property>
+			<property name="Bottom" type="integer">462</property>
 			<property name="Maximized" type="integer">0</property>
 			<property name="Active" type="integer">0</property>
 		</category>

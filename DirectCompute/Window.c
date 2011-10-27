@@ -14,11 +14,6 @@
 #include <sal.h>
 #include <rpcsal.h>
 
-#include <stdlib.h>
-
-#include <stdio.h>
-#include <string.h>
-
 #define DEFINE_GUIDW(name, l, w1, w2, b1, b2, b3, b4, b5, b6, b7, b8) const GUID DECLSPEC_SELECTANY name = { l, w1, w2, { b1, b2,  b3,  b4,  b5,  b6,  b7,  b8 } }
 //DEFINE_GUIDW(IID_ID3D10Texture2D,0x9B7E4C04,0x342C,0x4106,0xA1,0x9F,0x4F,0x27,0x04,0xF6,0x89,0xF0);
 DEFINE_GUIDW(IID_ID3D11Texture2D,0x6f15aaf2,0xd208,0x4e89,0x9a,0xb4,0x48,0x95,0x35,0xd3,0x4f,0x9c);
@@ -42,24 +37,55 @@ DEFINE_GUIDW(IID_ID3D11Texture2D,0x6f15aaf2,0xd208,0x4e89,0x9a,0xb4,0x48,0x95,0x
 
 
 //
-// simple high precision timer code 
-//
-LARGE_INTEGER tm0, tm1;
-LARGE_INTEGER fq;
- 
-void StartTimer()
+// Random number generator
+// see http://www.codeproject.com/KB/recipes/SimpleRNG.aspx
+
+// These values are not magical, just the default values Marsaglia used.
+// Any pair of unsigned integers should be fine.
+static unsigned int m_w = 521288629;
+//static unsigned int m_z = 362436069;
+#define MZ ((36969 * (362436069 & 65535) + (362436069 >> 16)) << 16)
+
+static void SetSeed(unsigned int u)
 {
-  QueryPerformanceFrequency(&fq);
-  QueryPerformanceCounter(&tm0);
+	m_w = u;
 }
 
-// return elapsed time in miliseconds since last start
-float Elapsed()
+// This is the heart of the generator.
+// It uses George Marsaglia's MWC algorithm to produce an unsigned integer.
+// See http://www.bobwheeler.com/statistics/Password/MarsagliaPost.txt
+static unsigned int GetUint()
 {
-  QueryPerformanceCounter(&tm1);		// get reference time
-  float tm = (float)((tm1.QuadPart-tm0.QuadPart)/(float)fq.QuadPart)*1000;
-  return tm;
+//	m_z = 36969 * (m_z & 65535) + (m_z >> 16);
+	m_w = 18000 * (m_w & 65535) + (m_w >> 16);
+	return (MZ) + m_w;
 }
+
+
+// Produce a uniform random sample from the open interval (0, 1).
+// The method will not return either end point.
+/*
+static float GetUniform()
+{
+    // 0 <= u < 2^32
+    unsigned int u = GetUint();
+	// The magic number below is 1/(2^32 + 2).
+    // The result is strictly between 0 and 1.
+    return (u + 1.0) * 2.328306435454494e-10;
+}
+*/
+
+// Produce a uniform random sample from the interval (-1, 1).
+// The method will not return either end point.
+static float GetUniform()
+{
+    // 0 <= u < 2^32
+    unsigned int u = GetUint();
+	// The magic number below is 1/(2^32 + 2).
+    // The result is strictly between 0 and 1.
+    return (u) * 2.328306435454494e-10 * 2.0;
+}
+
 
 /*
 #ifdef COMPILENWRITEOUTSHADERS
@@ -314,10 +340,14 @@ UpdateMu( float t[4], float a[4], float b[4] )
         a[ 2 ] = b[ 2 ];
         a[ 3 ] = b[ 3 ];
 
-        b[ 0 ] = 2.0f * rand() / (float) RAND_MAX - 1.0f;
-        b[ 1 ] = 2.0f * rand() / (float) RAND_MAX - 1.0f;
-        b[ 2 ] = 2.0f * rand() / (float) RAND_MAX - 1.0f;
-        b[ 3 ] = 2.0f * rand() / (float) RAND_MAX - 1.0f;
+//        b[ 0 ] = 2.0f * rand() / (float) RAND_MAX - 1.0f;
+//        b[ 1 ] = 2.0f * rand() / (float) RAND_MAX - 1.0f;
+//        b[ 2 ] = 2.0f * rand() / (float) RAND_MAX - 1.0f;
+//        b[ 3 ] = 2.0f * rand() / (float) RAND_MAX - 1.0f;
+       b[ 0 ] = GetUniform();
+        b[ 1 ] = GetUniform();
+        b[ 2 ] = GetUniform();
+        b[ 3 ] = GetUniform();
     }
 }
 
@@ -326,9 +356,12 @@ RandomColor( float v[4] )
 {
     do
     {
-    v[ 0 ] = 2.0f * rand() / (float) RAND_MAX - 1.0f;
-    v[ 1 ] = 2.0f * rand() / (float) RAND_MAX - 1.0f;
-    v[ 2 ] = 2.0f * rand() / (float) RAND_MAX - 1.0f;
+//    v[ 0 ] = 2.0f * rand() / (float) RAND_MAX - 1.0f;
+//    v[ 1 ] = 2.0f * rand() / (float) RAND_MAX - 1.0f;
+//    v[ 2 ] = 2.0f * rand() / (float) RAND_MAX - 1.0f;
+    v[ 0 ] = GetUniform();
+    v[ 1 ] = GetUniform();
+    v[ 2 ] = GetUniform();
     }
     while (v[0] < 0 && v[1] <0 && v[2]<0); // prevent black colors
     v[ 3 ] = 1.0f;
@@ -404,9 +437,6 @@ __declspec( naked )  void __cdecl winmain()
 	float zoom = 1.0f;
 
 	float timer = 0;
-
-	// start the high precision timer
-	StartTimer();
 
 	// timer global variables
 	DWORD		StartTime;
@@ -537,8 +567,9 @@ __declspec( naked )  void __cdecl winmain()
 	StartTime = GetTickCount();
 	CurrentTime = 0;	
 
-    // random animation for each run
-    srand((unsigned int)GetCurrentTime());
+	// seed the random number generator
+	SetSeed((unsigned int)GetCurrentTime());
+	//inlineSrand((unsigned int)GetCurrentTime());
 
 	// set the game loop to running by default
 	BRunning = TRUE;
@@ -554,14 +585,10 @@ __declspec( naked )  void __cdecl winmain()
 		CurrentTime = GetTickCount() - StartTime;
 
 		// go out of game loop and shutdown
-		if (CurrentTime > 6000 || GetAsyncKeyState(VK_ESCAPE)) 
+		if (CurrentTime > 30000 || GetAsyncKeyState(VK_ESCAPE)) 
 			BRunning = FALSE;
 
-  		static float elapsedPrev = 0;
-
-		float t = Elapsed();
-		dt = (elapsedPrev ==0) ? 1 :(t-elapsedPrev)/1000 *20;
-		elapsedPrev = t;
+		dt = CurrentTime / (1000.0 * 20);
 
 	    UpdateMu( &MuT, MuA, MuB );
  	    Interpolate( MuC, MuT, MuA, MuB );
@@ -627,16 +654,6 @@ __declspec( naked )  void __cdecl winmain()
 
 		// make it visible
 		pSwapChain->lpVtbl->Present( pSwapChain, 0, 0 );
-
-   		if ( (t= Elapsed()/1000) - timer > 1) // every second
-  		{  float td = t - timer; // real time interval a bit more than a second
-   		   timer = t;
-      		//swprintf(message,L"QJulia4D V1.4 FPS %.2f, using compute shader (dx11)", (float)fps/td);
-
-    		//SetWindowText(g_hWnd, message);
-    //		fps=0;
-  		}
-
 	}
 
 	// release all D3D device related resources
