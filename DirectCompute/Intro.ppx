@@ -4,26 +4,18 @@
 		<category name="Window">
 			<property name="Left" type="integer">-8</property>
 			<property name="Top" type="integer">-30</property>
-			<property name="Right" type="integer">1314</property>
-			<property name="Bottom" type="integer">591</property>
+			<property name="Right" type="integer">1085</property>
+			<property name="Bottom" type="integer">986</property>
 			<property name="Maximized" type="integer">1</property>
 			<property name="Active" type="integer">1</property>
-		</category>
-		<category name="Breakpoints">
-			<category name="Breakpoint1">
-				<property name="Line" type="integer">366</property>
-				<property name="Enabled" type="integer">1</property>
-				<property name="HitCount" type="integer">0</property>
-				<property name="Expression" type="string"></property>
-			</category>
 		</category>
 	</category>
 	<category name="qjulia4D.hlsl">
 		<category name="Window">
-			<property name="Left" type="integer">25</property>
-			<property name="Top" type="integer">25</property>
-			<property name="Right" type="integer">1225</property>
-			<property name="Bottom" type="integer">462</property>
+			<property name="Left" type="integer">125</property>
+			<property name="Top" type="integer">125</property>
+			<property name="Right" type="integer">932</property>
+			<property name="Bottom" type="integer">858</property>
 			<property name="Maximized" type="integer">0</property>
 			<property name="Active" type="integer">0</property>
 		</category>

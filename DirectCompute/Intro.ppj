@@ -15,10 +15,10 @@ AS = poasm.exe#
 RC = porc.exe#
 LINK = polink.exe#
 SIGN = posign.exe#
-CCFLAGS = -Tx86-coff -Os -Ox -Ob1 -fp:fast -W0 -Gd -Ze -Go -Zl #
+CCFLAGS = -Tx86-coff -Zi -Os -Ox -Ob1 -fp:fast -W0 -Gd -Ze -Go -Zl #
 ASFLAGS = -AIA32 -Gz #
 RCFLAGS = #
-LINKFLAGS = -subsystem:windows -machine:x86 -map -largeaddressaware -entry:winmain kernel32.lib user32.lib winmm.lib d3d11.lib dxgi.lib d3dcompiler.lib d3dx11.lib#
+LINKFLAGS = -debug -debugtype:both -subsystem:windows -machine:x86 -map -largeaddressaware -entry:winmain kernel32.lib user32.lib winmm.lib d3d11.lib dxgi.lib d3dcompiler.lib d3dx11.lib#
 SIGNFLAGS = -timeurl:http://timestamp.verisign.com/scripts/timstamp.dll -location:CU -store:MY -errkill#
 INCLUDE = ..\..\..\..\..\Program Files\Microsoft SDKs\Windows\v6.0A\Include;..\..\..\..\..\Program Files (x86)\Microsoft DirectX SDK (June 2010)\Include;$(PellesCDir)\Include\Win;$(PellesCDir)\Include#
 LIB = ..\..\..\..\..\Program Files (x86)\Microsoft DirectX SDK (June 2010)\Lib\x86;$(PellesCDir)\Lib\Win;$(PellesCDir)\Lib#
@@ -37,9 +37,9 @@ output\Window.obj: \
 	Window.c
 	$(CC) $(CCFLAGS) "$!" -Fo"$@"
 
-.SILENT:
+.OTHERFILES: \
+	qjulia4D.hlsl
 
 .EXCLUDEDFILES:
 
-.OTHERFILES: \
-	qjulia4D.hlsl
+.SILENT:
