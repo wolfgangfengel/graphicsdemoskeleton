@@ -14,8 +14,9 @@
 #include <sal.h>
 #include <rpcsal.h>
 
+#define DIRECTX101
+
 #define DEFINE_GUIDW(name, l, w1, w2, b1, b2, b3, b4, b5, b6, b7, b8) const GUID DECLSPEC_SELECTANY name = { l, w1, w2, { b1, b2,  b3,  b4,  b5,  b6,  b7,  b8 } }
-//DEFINE_GUIDW(IID_ID3D10Texture2D,0x9B7E4C04,0x342C,0x4106,0xA1,0x9F,0x4F,0x27,0x04,0xF6,0x89,0xF0);
 DEFINE_GUIDW(IID_ID3D11Texture2D,0x6f15aaf2,0xd208,0x4e89,0x9a,0xb4,0x48,0x95,0x35,0xd3,0x4f,0x9c);
 
 #include <d3d11.h>
@@ -34,9 +35,6 @@ DEFINE_GUIDW(IID_ID3D11Texture2D,0x6f15aaf2,0xd208,0x4e89,0x9a,0xb4,0x48,0x95,0x
 #define WELLBEHAVIOUR
 #define COMPILENWRITEOUTSHADERS
 #define SHORTENTRYPOINT
-
-#define DIRECTX101
-
 
 //
 // Random number generator
@@ -217,25 +215,16 @@ __declspec( naked )  void __cdecl winmain()
 	//
 	DXGI_SWAP_CHAIN_DESC temp;
 	temp = sd;
-	temp.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT | DXGI_USAGE_UNORDERED_ACCESS | DXGI_USAGE_SHADER_INPUT;
+//	temp.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT | DXGI_USAGE_UNORDERED_ACCESS | DXGI_USAGE_SHADER_INPUT;
 	temp.OutputWindow = hWnd;
-
-#if defined(DIRECTX101)
-	D3D_FEATURE_LEVEL featureLevel = D3D_FEATURE_LEVEL_11_0;
-#endif
 
 	D3D11CreateDeviceAndSwapChain(
 			NULL,
 			D3D_DRIVER_TYPE_HARDWARE,
 			NULL, 
 			D3D11_CREATE_DEVICE_DEBUG,
-#if defined(DIRECTX101)
-			&featureLevel,
-			1,
-#else
 			NULL,
 			0,
-#endif
 			D3D11_SDK_VERSION,
 			&temp,
 			&pSwapChain,
@@ -243,10 +232,8 @@ __declspec( naked )  void __cdecl winmain()
 			NULL,
 			&pImmediateContext);
 
-
   	DXGI_SWAP_CHAIN_DESC sdtemp;
   	pSwapChain->lpVtbl->GetDesc(pSwapChain, &sdtemp);
-
 
 	//
     // Create constant buffer
@@ -348,7 +335,7 @@ __declspec( naked )  void __cdecl winmain()
 	ID3D11ComputeShader *pCompiledComputeShader = NULL;
 
 #ifdef COMPILENWRITEOUTSHADERS
- 	 HRESULT hr = D3DX11CompileFromFile( "qjulia4D.hlsl", NULL, NULL, "CS_QJulia4D", "cs_4_0", 0, 0, NULL, &pByteCodeBlob, &pErrorBlob, NULL);
+ 	HRESULT hr = D3DX11CompileFromFile( "qjulia4D.hlsl", NULL, NULL, "CS_QJulia4D", "cs_4_1", 0, 0, NULL, &pByteCodeBlob, &pErrorBlob, NULL);
 	
 	// seems to require DirectX 11.1  
 	//HRESULT hr = D3DCompileFromFile(L"qjulia4D.hlsl", NULL, NULL, "CS_QJulia4D", "cs_5_0", NULL, NULL, &pByteCodeBlob, NULL, pErrorBlob );
@@ -422,7 +409,7 @@ __declspec( naked )  void __cdecl winmain()
 
 		dt = CurrentTime / (1000.0 * 20);
 
-	    UpdateMu( &MuT, MuA, MuB );
+    UpdateMu( &MuT, MuA, MuB );
  	    Interpolate( MuC, MuT, MuA, MuB );
   
   	    UpdateColor( &ColorT, ColorA, ColorB );

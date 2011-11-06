@@ -37,9 +37,9 @@ output\Window.obj: \
 	Window.c
 	$(CC) $(CCFLAGS) "$!" -Fo"$@"
 
-.OTHERFILES: \
-	qjulia4D.hlsl
+.SILENT:
 
 .EXCLUDEDFILES:
 
-.SILENT:
+.OTHERFILES: \
+	qjulia4D.hlsl
