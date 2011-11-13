@@ -29,6 +29,23 @@ float Elapsed()
 }
 
 
+/*
+stupid idea 247: worlds smallest vector maths library
+Here is a tiny 3d vector maths library:
+typedef float vec3[3];
+vec3 *vec(vec3 *v, float x) {v[0]=v[1]=v[2]=x;return v;}
+float *mav(vec3 *v1,vec3 *v2,vec3 *v3,vec3 *v4,vec3 *v5){
+  for (int i=0; i!=3; i++) v3[i]=v1[i]*v4[i]+v2[i]*v5[i];
+ return v3[0]+v3[1]+v3[2];
+}
+vec3 VZERO={0,0,0};  vec3 VONE={1,1,1}; vec3 VMONE={-1,-1,-1};
+
+Thats it. It can do zero, set, add, sub, length2, dotprod, negate, lerp, centroid. e.g add is :
+mav(&v1, &v2, &v3, &VONE, &VONE ); // v3=v2+v1
+
+Lerp means that centroid (the centre vertex of a quad) can be found without a division by using two lerps. For a moment it seems cool until you realise the calls to it dont compress all that well.
+The challenges remaining are xprod, normalise and max/min. then I have everything for handling my 3d modeller qoob.If I can make minor adjustments to get those, this might be worth persuing.
+*/
 
 //
 // Random number generator
