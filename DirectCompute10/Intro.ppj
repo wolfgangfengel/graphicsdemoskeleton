@@ -37,9 +37,10 @@ output\Window.obj: \
 	Window.c
 	$(CC) $(CCFLAGS) "$!" -Fo"$@"
 
-.SILENT:
+.OTHERFILES: \
+	qjulia4D.hlsl \
+	blitStructuredBuffer.hlsl
 
 .EXCLUDEDFILES:
 
-.OTHERFILES: \
-	qjulia4D.hlsl
+.SILENT:

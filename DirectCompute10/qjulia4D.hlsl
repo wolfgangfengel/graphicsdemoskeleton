@@ -13,14 +13,11 @@
 
 #if defined(DIRECTX101)
 
-#define WINHEIGHT 600
-
 struct BufferStruct
 {
-	uint4 color;
+	float color;
 };
-RWStructuredBuffer<BufferStruct> output;
-
+RWStructuredBuffer<BufferStruct> output : register (u0); // UAV 0
 #else
 RWTexture2D<float4> output : register (u0);
 #endif
@@ -29,19 +26,14 @@ RWTexture2D<float4> output : register (u0);
 
 cbuffer cbCS : register( b0 )
 { 
-  float4 c_diffuse;  // diffuse shading color
-
-  float4 c_mu;       // julia quaternion parameter
-  float  c_epsilon;  // julia detail  	
- 
-	int    c_width;  // size view port
-	int    c_height;
-  
-  int  c_selfShadow;  // selfshadowing on or off  
-
-  float4x4 rotation;   
-  
-  float zoom;
+	float4 c_diffuse;	// diffuse shading color
+	float4 c_mu;		// julia quaternion parameter
+	float c_epsilon;	// julia detail  	
+	int c_width;		// size view port
+	int c_height;
+	int c_selfShadow;  // selfshadowing on or off  
+	float4x4 rotation;   
+	float zoom;
 };
 
 
@@ -310,9 +302,8 @@ float3 intersectSphere( float3 rO, float3 rD )
 //  -return the shaded color if there was a hit and the background color otherwise
 //
 
-float4 QJulia( float3 rO ,                // ray origin
-               float3 rD ,                // ray direction (unit length)
-
+float4 QJulia(float3 rO,					// ray origin
+              float3 rD,					// ray direction (unit length)
               float4 mu,                    // quaternion constant specifying the particular set
               float epsilon,                // specifies precision of intersection
               float3 eye,                   // location of the viewer
@@ -382,19 +373,57 @@ float4 QJulia( float3 rO ,                // ray origin
    return color;
 }
 
+// Pack four positive normalized numbers between 0.0 and 1.0 into a 32-bit fp
+// channel of a buffer
+float Pack4PNForFP32(float4 channel)
+{
+	// layout of a 32-bit fp register
+	// SEEEEEEEEMMMMMMMMMMMMMMMMMMMMMMM
+	// 1 sign bit; 8 bits for the exponent and 23 bits for the mantissa
+	uint uValue = 0;
+	
+	// just make sure everything is between 0..1
+	channel = saturate(channel);
 
-[numthreads(4, 64, 1)]
-//****************************************************************************
+	// pack x
+	uValue = ((uint)(channel.x * 255.0 + 0.5)); 
+
+	// pack y
+	uValue |= ((uint)(channel.y * 255.0 + 0.5)) << 8;
+
+	// pack z in EMMMMMMM
+	uValue |= ((uint)(channel.z * 255.0 + 0.5)) << 16;
+
+	// pack z in SEEEEEEE
+	// the last E will never be 1b because the upper value is 254
+	// max value is 11111110 == 254
+	// this prevents the bits of the exponents to become all 1
+	// range is 1.. 254
+	// to prevent an exponent that is 0 we add 1.0
+	uValue |= ((uint)(channel.w * 253.0 + 1.5)) << 24;
+
+ return asfloat(uValue);
+}
+
+
+[numthreads(8, 16, 1)]
+// SV_DispatchThreadID - index of the thread within the entire dispatch in each dimension x - 0..799; y - 0..639
+//
+// SV_GroupIndex - index in a thread group: varies from 0 to (numthreadsX * numthreadsY * numThreadsZ) – 1
+//
+// SV_GroupID - index of a thread group in the dispatch. For example calling Dispatch(2,1,1) results in possible values of 0,0,0 and 1,0,0.
+//
+// SV_GroupThreadID - index of a thread in a thread group, in each dimension.
+// For example if numthreads(3,2,1) was specified possible values for 
+// the SV_GroupThreadID input value have this range of values (0-2,0-1,0).
 void CS_QJulia4D( uint3 Gid : SV_GroupID, uint3 DTid : SV_DispatchThreadID, uint3 GTid : SV_GroupThreadID, uint GI : SV_GroupIndex )
-//****************************************************************************
 { 
     float4 coord = float4((float)DTid.x, (float)DTid.y, 0.0f, 0.0f);
 
     float2 size     = float2((float)c_width, (float)c_height);
     float scale     = min(size.x, size.y);
     float2 half     = float2(0.5f, 0.5f);
-    float2 position = (coord.xy - half * size) / scale *BOUNDING_RADIUS_2 *zoom;
-    //float2 frame    = (position) * zoom;
+    float2 position = (coord.xy - half * size) / scale * BOUNDING_RADIUS_2 * zoom; 
 
     float3 light = float3(1.5f, 0.5f, 4.0f);
     float3 eye   = float3(0.0f, 0.0f, 4.0f);
@@ -406,21 +435,25 @@ void CS_QJulia4D( uint3 Gid : SV_GroupID, uint3 DTid : SV_DispatchThreadID, uint
     eye   = mul(float4(eye, 0.0), rotation).xyz;
     ray   = mul(float4(ray, 0.0), rotation).xyz;
     
-
-
     // ray start and ray direction
     float3 rO =  eye;
     float3 rD =  ray - rO;
-
     
     float4 color = QJulia(rO, rD, c_mu, c_epsilon, eye, light, c_selfShadow);
-
+    
 #if defined(DIRECTX101)
-	int stride = 4 * ((600 + 63) / 64);  
+	// we have four threads running in x direction
+	uint stride = c_width;  
 
-	// buffer stide, assumes data stride = data width (i.e. no padding)
-   	int idx = DTid.y * stride + DTid.x;
-	output[idx].color = color;
+	// buffer stride, assumes data stride = data width (i.e. no padding)
+	// DTid.x - 0..799
+	// DTid.y - 0..639
+	uint idx = (DTid.x + 400) + (DTid.y) * stride;
+	
+    // calculate the buffer index corresponding to the current thread
+//    uint idx = getBufferIndex( DTid.xy, Gid.xy );
+	
+	output[idx].color = Pack4PNForFP32((color));  
 #else	
 	output[DTid.xy] = color;
 #endif

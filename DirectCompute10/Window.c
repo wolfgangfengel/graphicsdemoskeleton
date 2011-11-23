@@ -14,7 +14,7 @@
 #include <sal.h>
 #include <rpcsal.h>
 
-#define DIRECTX101
+//#define DIRECTX101
 
 #define DEFINE_GUIDW(name, l, w1, w2, b1, b2, b3, b4, b5, b6, b7, b8) const GUID DECLSPEC_SELECTANY name = { l, w1, w2, { b1, b2,  b3,  b4,  b5,  b6,  b7,  b8 } }
 DEFINE_GUIDW(IID_ID3D11Texture2D,0x6f15aaf2,0xd208,0x4e89,0x9a,0xb4,0x48,0x95,0x35,0xd3,0x4f,0x9c);
@@ -29,6 +29,10 @@ DEFINE_GUIDW(IID_ID3D11Texture2D,0x6f15aaf2,0xd208,0x4e89,0x9a,0xb4,0x48,0x95,0x
 #define WINHEIGHT 600
 #define WINPOSX 200 
 #define WINPOSY 200
+
+#define THREADSX 8			// number of threads in the thread group used in the compute shader
+#define THREADSY 16			// number of threads in the thread group used in the compute shader
+
 
 // makes the applicaton behave well with windows
 // allows to remove some system calls to reduce size
@@ -204,8 +208,12 @@ __declspec( naked )  void __cdecl winmain()
 	// keep track if the game loop is still running
 	BOOL		BRunning;
 
+	#define Width (((WINWIDTH + THREADSX - 1) / THREADSX) * THREADSX)	// multiply of 4
+	#define Height (((WINHEIGHT + THREADSY - 1) / THREADSY) * THREADSY) // multiply of 64
+
+
 	// the most simple window
-	HWND hWnd = CreateWindow("edit", 0, WS_POPUP | WS_VISIBLE, WINPOSX, WINPOSY, WINWIDTH, WINHEIGHT, 0, 0, 0, 0);
+	HWND hWnd = CreateWindow("edit", 0, WS_POPUP | WS_VISIBLE, WINPOSX, WINPOSY, Width, Height, 0, 0, 0, 0);
 
 	// don't show the cursor
 	ShowCursor(FALSE);
@@ -229,7 +237,7 @@ __declspec( naked )  void __cdecl winmain()
 	sd.SwapEffect = DXGI_SWAP_EFFECT_SEQUENTIAL;
 	sd.Flags = 0;
 */
-	const static DXGI_SWAP_CHAIN_DESC sd = {{WINWIDTH, WINHEIGHT, {60, 1},  DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED, DXGI_MODE_SCALING_UNSPECIFIED }, {1, 0}, DXGI_USAGE_RENDER_TARGET_OUTPUT, 1, NULL, TRUE, DXGI_SWAP_EFFECT_SEQUENTIAL, 0};
+	const static DXGI_SWAP_CHAIN_DESC sd = {{(const)Width, (const)Height, {60, 1},  DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED, DXGI_MODE_SCALING_UNSPECIFIED }, {1, 0}, DXGI_USAGE_RENDER_TARGET_OUTPUT, 1, NULL, TRUE, DXGI_SWAP_EFFECT_SEQUENTIAL, 0};
 	//
 	DXGI_SWAP_CHAIN_DESC temp;
 	temp = sd;
@@ -276,14 +284,6 @@ __declspec( naked )  void __cdecl winmain()
     Desc.ByteWidth = ((sizeof( QJulia4DConstants ) + 15)/16)*16; // must be multiple of 16 bytes
     pd3dDevice->lpVtbl->CreateBuffer(pd3dDevice, &Desc, NULL, &pcbFractal);
 
-#if !defined(DIRECTX101)
-	// get access to the back buffer via a texture
-  	ID3D11Texture2D* pTexture;
-  	pSwapChain->lpVtbl->GetBuffer(pSwapChain, 0, (REFIID ) &IID_ID3D11Texture2D, ( LPVOID* )&pTexture );
-
-    // create shader unordered access view on back buffer for compute shader to write into texture
-   	pd3dDevice->lpVtbl->CreateUnorderedAccessView(pd3dDevice,(ID3D11Resource*)pTexture, NULL, &pComputeOutput );
-#else
 	ID3D11RenderTargetView *pRenderTargetView;
 
 	// Create a back buffer render target, get a view on it to clear it later
@@ -292,12 +292,10 @@ __declspec( naked )  void __cdecl winmain()
 	pd3dDevice->lpVtbl->CreateRenderTargetView( pd3dDevice, (ID3D11Resource*)pBackBuffer, NULL, &pRenderTargetView );
 	pImmediateContext->lpVtbl->OMSetRenderTargets( pImmediateContext, 1, &pRenderTargetView, NULL );
 
-	const static D3D11_VIEWPORT vp = {0, 0, WINWIDTH, WINHEIGHT, 0, 1}; 
+	const static D3D11_VIEWPORT vp = {0, 0, (float)Width, (float)Height, 0, 1}; 
 	pImmediateContext->lpVtbl->RSSetViewports( pImmediateContext, 1, &vp );
-#endif
 
 
-#if defined(DIRECTX101)
 	ID3D11Buffer*				pStructuredBuffer;
 	ID3D11UnorderedAccessView*  pComputeOutputUAV = NULL;  // compute output
 	ID3D11ShaderResourceView*	pComputeShaderSRV = NULL; 
@@ -307,15 +305,16 @@ __declspec( naked )  void __cdecl winmain()
 	//
 	struct BufferStruct
 	{
-		UINT color[4];
+		float color;
 	};
 
 	D3D11_BUFFER_DESC sbDesc;
 	sbDesc.BindFlags = D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE;
 	sbDesc.CPUAccessFlags = 0;
 	sbDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
-	sbDesc.StructureByteStride = 16; // sizeof(BufferStruct);
-	sbDesc.ByteWidth = 16 * ((WINWIDTH + 3) / 4) * ((WINHEIGHT + 63) / 64);
+	sbDesc.StructureByteStride = 4; //sizeof(BufferStruct);
+
+	sbDesc.ByteWidth = sbDesc.StructureByteStride * Width * Height + 400;
 	sbDesc.Usage = D3D11_USAGE_DEFAULT;
 	pd3dDevice->lpVtbl->CreateBuffer(pd3dDevice, &sbDesc, NULL, &pStructuredBuffer);
 
@@ -325,7 +324,7 @@ __declspec( naked )  void __cdecl winmain()
 	D3D11_UNORDERED_ACCESS_VIEW_DESC sbUAVDesc;
 	sbUAVDesc.Buffer.FirstElement = 0;
 	sbUAVDesc.Buffer.Flags = 0;
-	sbUAVDesc.Buffer.NumElements = ((WINWIDTH + 3) / 4) * ((WINHEIGHT + 63) / 64);
+	sbUAVDesc.Buffer.NumElements = sbDesc.ByteWidth / sbDesc.StructureByteStride; 
 	sbUAVDesc.Format = DXGI_FORMAT_UNKNOWN;
 	sbUAVDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
 	pd3dDevice->lpVtbl->CreateUnorderedAccessView(pd3dDevice, (ID3D11Resource *)pStructuredBuffer, &sbUAVDesc, &pComputeOutputUAV);
@@ -335,13 +334,12 @@ __declspec( naked )  void __cdecl winmain()
 	//
 	D3D11_SHADER_RESOURCE_VIEW_DESC sbSRVDesc;
 	sbSRVDesc.Buffer.ElementOffset = 0;
-	sbSRVDesc.Buffer.ElementWidth = 16; // sizeof(BufferStruct);
-	sbSRVDesc.Buffer.FirstElement = 0;
-	sbSRVDesc.Buffer.NumElements = ((WINWIDTH + 3) / 4) * ((WINHEIGHT + 63) / 64);
+	sbSRVDesc.Buffer.ElementWidth = sbDesc.StructureByteStride;
+	sbSRVDesc.Buffer.FirstElement = sbUAVDesc.Buffer.FirstElement;
+	sbSRVDesc.Buffer.NumElements = sbUAVDesc.Buffer.NumElements; 
 	sbSRVDesc.Format = DXGI_FORMAT_UNKNOWN;
 	sbSRVDesc.ViewDimension = D3D11_SRV_DIMENSION_BUFFER;
 	pd3dDevice->lpVtbl->CreateShaderResourceView(pd3dDevice, (ID3D11Resource *) pStructuredBuffer, &sbSRVDesc, &pComputeShaderSRV);
-#endif
 
 
 	//
@@ -351,6 +349,8 @@ __declspec( naked )  void __cdecl winmain()
 	ID3DBlob *pErrorBlob = NULL;
 //	ID3DBlob *pCompressedByteCodeBlob = NULL;
 	ID3D11ComputeShader *pCompiledComputeShader = NULL;
+	ID3D11PixelShader *pCompiledPixelShader = NULL;
+	ID3D11VertexShader *pCompiledVertexShader = NULL;
 
 #ifdef COMPILENWRITEOUTSHADERS
  	HRESULT hr = D3DX11CompileFromFile( "qjulia4D.hlsl", NULL, NULL, "CS_QJulia4D", "cs_4_1", 0, 0, NULL, &pByteCodeBlob, &pErrorBlob, NULL);
@@ -400,6 +400,23 @@ __declspec( naked )  void __cdecl winmain()
 		MessageBoxA(NULL, "CreateComputerShader() failed", "Error", MB_OK | MB_ICONERROR);
 #endif
 
+	hr = D3DX11CompileFromFile("blitStructuredBuffer.hlsl", NULL, NULL, "PSBlit", "ps_4_0", 0, 0, NULL, &pByteCodeBlob, &pErrorBlob, NULL);
+
+	if(hr != S_OK)
+		MessageBoxA(NULL, (char *)pErrorBlob->lpVtbl->GetBufferPointer(pErrorBlob), "Error", MB_OK | MB_ICONERROR);
+
+	hr = pd3dDevice->lpVtbl->CreatePixelShader(pd3dDevice, pByteCodeBlob->lpVtbl->GetBufferPointer(pByteCodeBlob), pByteCodeBlob->lpVtbl->GetBufferSize(pByteCodeBlob), NULL, &pCompiledPixelShader);
+
+	hr = D3DX11CompileFromFile("blitStructuredBuffer.hlsl", NULL, NULL, "VSBlit", "vs_4_0", 0, 0, NULL, &pByteCodeBlob, &pErrorBlob, NULL);
+
+	if(hr != S_OK)
+		MessageBoxA(NULL, (char *)pErrorBlob->lpVtbl->GetBufferPointer(pErrorBlob), "Error", MB_OK | MB_ICONERROR);
+
+	hr = pd3dDevice->lpVtbl->CreateVertexShader(pd3dDevice, pByteCodeBlob->lpVtbl->GetBufferPointer(pByteCodeBlob), pByteCodeBlob->lpVtbl->GetBufferSize(pByteCodeBlob), NULL, &pCompiledVertexShader);
+	
+	if(hr != S_OK)
+		MessageBoxA(NULL, "CreateComputerShader() failed", "Error", MB_OK | MB_ICONERROR);
+
 	// setup timer 
 	StartTime = GetTickCount();
 	CurrentTime = 0;	
@@ -439,8 +456,8 @@ __declspec( naked )  void __cdecl winmain()
 
     		static QJulia4DConstants mc;
 
-    		mc.c_height = (int)WINHEIGHT;
-    		mc.c_width  = (int)WINWIDTH;
+    		mc.c_height = (int)Height;
+    		mc.c_width  = (int)Width;
     		mc.diffuse[0] = ColorC[0];
     		mc.diffuse[1] = ColorC[1];
     		mc.diffuse[2] = ColorC[2];
@@ -480,77 +497,34 @@ __declspec( naked )  void __cdecl winmain()
     	pImmediateContext->lpVtbl->CSSetShader(pImmediateContext, pCompiledComputeShader, NULL, 0 );
 
     	// For CS output
-#if defined(DIRECTX101)
 		pImmediateContext->lpVtbl->CSSetUnorderedAccessViews(pImmediateContext, 0, 1, &pComputeOutputUAV, NULL);
-#else
-    	pImmediateContext->lpVtbl->CSSetUnorderedAccessViews(pImmediateContext, 0, 1, &pComputeOutput, NULL);
-#endif
 
     	// For CS constant buffer
     	pImmediateContext->lpVtbl->CSSetConstantBuffers(pImmediateContext, 0, 1, &pcbFractal );
 
     	// Run the CS
-    	pImmediateContext->lpVtbl->Dispatch(pImmediateContext, (WINWIDTH + 3) / 4, (WINHEIGHT + 63) / 64, 1 );
-
-#if defined(DIRECTX101)
-		//
-		// to make CopyResource work it would need to be the same type of resource
-		//
-    	//pImmediateContext->lpVtbl->CSSetUnorderedAccessViews(pImmediateContext, 0, 1, &pComputeOutput, NULL);
-
-		//pImmediateContext->lpVtbl->CopyResource(pImmediateContext, (ID3D11Resource *)pTexture, (ID3D11Resource *)pStructuredBuffer );
+    	pImmediateContext->lpVtbl->Dispatch(pImmediateContext,Width / THREADSX, Height / THREADSY, 1 );
 
 		// D3D11 on D3D10 hW: only a single UAV can be bound to a pipeline at once. 
  		// set to NULL to unbind
 		ID3D11UnorderedAccessView* pNullUAV = NULL;
 		pImmediateContext->lpVtbl->CSSetUnorderedAccessViews(pImmediateContext, 0, 1, &pNullUAV, NULL);
 
- 		// draw into the backbuffer
-   		static const float ClearColor[4] = { 0.0f, 0.125f, 0.3f, 1.0f };
-		pImmediateContext->lpVtbl->ClearRenderTargetView(pImmediateContext, pRenderTargetView, ClearColor );
+ 		// set the vertex shader
+		pImmediateContext->lpVtbl->VSSetShader(pImmediateContext, pCompiledVertexShader, NULL, 0 );
 
-		// line 1504 of HDRToneMapping example
+		// set the pixel shader
+		pImmediateContext->lpVtbl->PSSetShader(pImmediateContext, pCompiledPixelShader, NULL, 0 );
+
 
 		// to draw into the backbuffer we need a shader resource view
+		pImmediateContext->lpVtbl->PSSetShaderResources(pImmediateContext, 0, 1, &pComputeShaderSRV );
 
-		// then we store the access values to read from the structured buffer in a constant buffer 
-		/*
-    	D3D11_MAPPED_SUBRESOURCE MappedResource;            
-    	V( pd3dImmediateContext->Map( g_pcbCS, 0, D3D11_MAP_WRITE_DISCARD, 0, &MappedResource ) );
-    	UINT* p = (UINT*)MappedResource.pData;
-    	p[0] = dwWidth;
-    	p[1] = dwHeight;
-    	pd3dImmediateContext->Unmap( g_pcbCS, 0 );
-    	ID3D11Buffer* ppCB[1] = { g_pcbCS };
-    	pd3dImmediateContext->PSSetConstantBuffers( g_iCBPSBind, 1, ppCB );
-		*/
+	    pImmediateContext->lpVtbl->IASetPrimitiveTopology(pImmediateContext, D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST );
+    
+		// draw the results on the screen
+		pImmediateContext->lpVtbl->Draw(pImmediateContext, 3, 0 );
 
-		// then we draw a quad and copy from the constant buffer into the back buffer
-
-		// this might be the shader who does that
-		/*
-		StructuredBuffer<float4> buffer : register( t0 );
-
-		struct QuadVS_Output
-		{
-		    float4 Pos : SV_POSITION;              
-		    float2 Tex : TEXCOORD0;
-		};
-
-		cbuffer cbPS : register( b0 )
-		{
-		    uint4    g_param;   
-		};
-
-		float4 PSDump( QuadVS_Output Input ) : SV_TARGET
-		{
-		   // To calculate the buffer offset, it is natural to use the screen space coordinates,
-		   // Input.Pos is the screen space coordinates of the pixel being written 
-	 	   return buffer[ (Input.Pos.x - 0.5) + (Input.Pos.y - 0.5) * g_param.x ];	
-		}
-		*/
-
-#endif
 		// make it visible
 		pSwapChain->lpVtbl->Present( pSwapChain, 0, 0 );
 	}
@@ -560,21 +534,13 @@ __declspec( naked )  void __cdecl winmain()
 	    pImmediateContext->lpVtbl->ClearState(pImmediateContext);
 	    pd3dDevice->lpVtbl->Release(pd3dDevice);
 	    pSwapChain->lpVtbl->Release(pSwapChain);	
-#if !defined(DIRECTX101) 
-	    pTexture->lpVtbl->Release(pTexture);	
-		pComputeOutput->lpVtbl->Release(pComputeOutput);
-#endif
 		pByteCodeBlob->lpVtbl->Release(pByteCodeBlob);
 		//pErrorBlob->lpVtbl->Release(pErrorBlob);
 		//pCompressedByteCodeBlob->lpVtbl->Release(pCompressedByteCodeBlob);
     	pcbFractal->lpVtbl->Release(pcbFractal);
-
-#if defined(DIRECTX101) 
 		pStructuredBuffer->lpVtbl->Release(pStructuredBuffer);
 		pComputeOutputUAV->lpVtbl->Release(pComputeOutputUAV);
 		pComputeShaderSRV->lpVtbl->Release(pComputeShaderSRV);
-#endif
-
 #endif // defined(WELLBEHAVIOUR)
 
 #if !defined(SHORTENTRYPOINT)
