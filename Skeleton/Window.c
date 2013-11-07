@@ -72,7 +72,7 @@ __declspec( naked )  void __cdecl winmain()
 	BOOL		BRunning;
 
 	// the most simple window
-	HWND hWnd = CreateWindow("edit", 0, WS_POPUP | WS_VISIBLE, WINPOSX, WINPOSY, WINWIDTH, WINHEIGHT, 0, 0, 0, 0);
+	HWND hWnd = CreateWindow(L"edit", 0, WS_POPUP | WS_VISIBLE, WINPOSX, WINPOSY, WINWIDTH, WINHEIGHT, 0, 0, 0, 0);
 
 	// don't show the cursor
 	ShowCursor(FALSE);
