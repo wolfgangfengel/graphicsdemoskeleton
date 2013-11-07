@@ -19,9 +19,9 @@
 DEFINE_GUIDW(IID_ID3D11Texture2D,0x6f15aaf2,0xd208,0x4e89,0x9a,0xb4,0x48,0x95,0x35,0xd3,0x4f,0x9c);
 
 #include <d3d11.h>
-#include <d3dx11.h>
+//#include <d3dx11.h>
 
-#include <D3Dcompiler.h>
+#include <d3dcompiler.h>
 
 // define the size of the window
 #define WINWIDTH 800 
@@ -204,7 +204,7 @@ __declspec( naked )  void __cdecl winmain()
 	BOOL		BRunning;
 
 	// the most simple window
-	HWND hWnd = CreateWindow("edit", 0, WS_POPUP | WS_VISIBLE, WINPOSX, WINPOSY, WINWIDTH, WINHEIGHT, 0, 0, 0, 0);
+	HWND hWnd = CreateWindow(L"edit", 0, WS_POPUP | WS_VISIBLE, WINPOSX, WINPOSY, WINWIDTH, WINHEIGHT, 0, 0, 0, 0);
 
 	// don't show the cursor
 	ShowCursor(FALSE);
@@ -292,10 +292,10 @@ __declspec( naked )  void __cdecl winmain()
 	ID3D11ComputeShader *pCompiledComputeShader = NULL;
 
 #ifdef COMPILENWRITEOUTSHADERS
- 	 HRESULT hr = D3DX11CompileFromFile( "qjulia4D.hlsl", NULL, NULL, "CS_QJulia4D", "cs_5_0", 0, 0, NULL, &pByteCodeBlob, &pErrorBlob, NULL);
+ 	// HRESULT hr = D3DX11CompileFromFile( "qjulia4D.hlsl", NULL, NULL, "CS_QJulia4D", "cs_5_0", 0, 0, NULL, &pByteCodeBlob, &pErrorBlob, NULL);
 	
 	// seems to require DirectX 11.1  
-	//HRESULT hr = D3DCompileFromFile(L"qjulia4D.hlsl", NULL, NULL, "CS_QJulia4D", "cs_5_0", NULL, NULL, &pByteCodeBlob, NULL, pErrorBlob );
+	HRESULT hr = D3DCompileFromFile(L"qjulia4D.hlsl", NULL, NULL, "CS_QJulia4D", "cs_5_0", NULL, NULL, &pByteCodeBlob, &pErrorBlob );
 /*	
 	char array[64];
 	int length = strlen(pComputeShader);
