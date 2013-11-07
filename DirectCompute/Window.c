@@ -31,10 +31,9 @@ DEFINE_GUIDW(IID_ID3D11Texture2D,0x6f15aaf2,0xd208,0x4e89,0x9a,0xb4,0x48,0x95,0x
 
 // makes the applicaton behave well with windows
 // allows to remove some system calls to reduce size
-//#define WELLBEHAVIOUR
+#define WELLBEHAVIOUR
 
-#define COMPILENWRITEOUTSHADERS
-
+#include "qjulia4D.sh"
 
 //
 // Random number generator
@@ -263,43 +262,13 @@ __declspec( naked )  void __cdecl winmain()
 	//
 	ID3DBlob *pByteCodeBlob = NULL;
 	ID3DBlob *pErrorBlob = NULL;
-	ID3DBlob *pCompressedByteCodeBlob = NULL;
 	ID3D11ComputeShader *pCompiledComputeShader = NULL;
-	D3D_SHADER_DATA ShaderData;
 
 
-#ifdef COMPILENWRITEOUTSHADERS
-	// seems to require DirectX 11.1  
-	HRESULT hr = D3DCompileFromFile(L"qjulia4D.hlsl", NULL, NULL, "CS_QJulia4D", "cs_5_0", D3DCOMPILE_OPTIMIZATION_LEVEL3, 0, &pByteCodeBlob, &pErrorBlob);
+	HRESULT hr = pd3dDevice->lpVtbl->CreateComputeShader(pd3dDevice, g_CS_QJulia4D, sizeof(g_CS_QJulia4D), NULL, &pCompiledComputeShader);
 
-	if(hr != S_OK)
-		MessageBoxA(NULL, (char *)pErrorBlob->lpVtbl->GetBufferPointer(pErrorBlob), "Error", MB_OK | MB_ICONERROR);
-
-	ShaderData.pBytecode = pByteCodeBlob->lpVtbl->GetBufferPointer(pByteCodeBlob);
-	ShaderData.BytecodeLength = pByteCodeBlob->lpVtbl->GetBufferSize(pByteCodeBlob);
-
-	hr = D3DCompressShaders(1, &ShaderData, D3D_COMPRESS_SHADER_KEEP_ALL_PARTS, &pCompressedByteCodeBlob);
-	if(hr != S_OK)
-		MessageBoxA(NULL, "D3DCompressShaders() failed", "Error", MB_OK | MB_ICONERROR);
-	
-	// seems to require DirectX 11.1
-	D3DWriteBlobToFile(pCompressedByteCodeBlob, L"ComputeShader.sh", TRUE);
-#endif
-
-	// seems to require DirectX 11.1
-	D3DReadFileToBlob(L"ComputeShader.sh", &pCompressedByteCodeBlob);
-
-	// compressed version seems to be 571 in size while the uncompressed version is 776
-	unsigned int sizeOfCompressedBlob = pCompressedByteCodeBlob->lpVtbl->GetBufferSize(pCompressedByteCodeBlob);
-	D3DDecompressShaders(pCompressedByteCodeBlob->lpVtbl->GetBufferPointer(pCompressedByteCodeBlob), sizeOfCompressedBlob, 1, 0, NULL, 0, &pByteCodeBlob, NULL);
-
-#ifdef COMPILENWRITEOUTSHADERS
-	hr =
-#endif 
-	pd3dDevice->lpVtbl->CreateComputeShader(pd3dDevice, pByteCodeBlob->lpVtbl->GetBufferPointer(pByteCodeBlob), pByteCodeBlob->lpVtbl->GetBufferSize(pByteCodeBlob), NULL, &pCompiledComputeShader);
-
-#ifdef COMPILENWRITEOUTSHADERS
-	if(hr != S_OK)
+#if defined(_DEBUG)
+	if (hr != S_OK)
 		MessageBoxA(NULL, "CreateComputerShader() failed", "Error", MB_OK | MB_ICONERROR);
 #endif
 
@@ -397,11 +366,6 @@ __declspec( naked )  void __cdecl winmain()
 	    pd3dDevice->lpVtbl->Release(pd3dDevice);
 	    pSwapChain->lpVtbl->Release(pSwapChain);	 
 	    pTexture->lpVtbl->Release(pTexture);	
-
-//		pByteCodeBlob->lpVtbl->Release(pByteCodeBlob);
-//		pErrorBlob->lpVtbl->Release(pErrorBlob);
-		pCompressedByteCodeBlob->lpVtbl->Release(pCompressedByteCodeBlob);
-
     	pcbFractal->lpVtbl->Release(pcbFractal);
 		pComputeOutput->lpVtbl->Release(pComputeOutput);
 #endif
