@@ -4,7 +4,7 @@
 //
 // by Wolfgang Engel 
 //
-// Last time modified: 10/26/2011 
+// Last time modified: 11/07/2013 
 //
 ///////////////////////////////////////////////////////////////////////
 #define WIN32_LEAN_AND_MEAN
@@ -31,7 +31,7 @@ DEFINE_GUIDW(IID_ID3D11Texture2D,0x6f15aaf2,0xd208,0x4e89,0x9a,0xb4,0x48,0x95,0x
 
 // makes the applicaton behave well with windows
 // allows to remove some system calls to reduce size
-#define WELLBEHAVIOUR
+//#define WELLBEHAVIOUR
 
 #define COMPILENWRITEOUTSHADERS
 
@@ -69,7 +69,7 @@ static float GetUniform()
     unsigned int u = GetUint();
 	// The magic number below is 1/(2^32 + 2).
     // The result is strictly between 0 and 1.
-    return (u) * 2.328306435454494e-10 * 2.0;
+	return (u) * (float) 2.328306435454494e-10 * 2.0f;
 }
 
 
@@ -98,11 +98,7 @@ UpdateMu( float t[4], float a[4], float b[4] )
         a[ 2 ] = b[ 2 ];
         a[ 3 ] = b[ 3 ];
 
-//        b[ 0 ] = 2.0f * rand() / (float) RAND_MAX - 1.0f;
-//        b[ 1 ] = 2.0f * rand() / (float) RAND_MAX - 1.0f;
-//        b[ 2 ] = 2.0f * rand() / (float) RAND_MAX - 1.0f;
-//        b[ 3 ] = 2.0f * rand() / (float) RAND_MAX - 1.0f;
-       b[ 0 ] = GetUniform();
+        b[ 0 ] = GetUniform();
         b[ 1 ] = GetUniform();
         b[ 2 ] = GetUniform();
         b[ 3 ] = GetUniform();
@@ -114,12 +110,9 @@ RandomColor( float v[4] )
 {
     do
     {
-//    v[ 0 ] = 2.0f * rand() / (float) RAND_MAX - 1.0f;
-//    v[ 1 ] = 2.0f * rand() / (float) RAND_MAX - 1.0f;
-//    v[ 2 ] = 2.0f * rand() / (float) RAND_MAX - 1.0f;
-    v[ 0 ] = GetUniform();
-    v[ 1 ] = GetUniform();
-    v[ 2 ] = GetUniform();
+		v[ 0 ] = GetUniform();
+		v[ 1 ] = GetUniform();
+		v[ 2 ] = GetUniform();
     }
     while (v[0] < 0 && v[1] <0 && v[2]<0); // prevent black colors
     v[ 3 ] = 1.0f;
@@ -144,7 +137,7 @@ UpdateColor( float t[4], float a[4], float b[4] )
 }
 
 
-#if 0 //defined(WELLBEHAVIOUR)
+#if 0 
 
 // this is a simplified entry point ...
 void __stdcall WinMainCRTStartup()
@@ -209,26 +202,8 @@ __declspec( naked )  void __cdecl winmain()
 	// don't show the cursor
 	ShowCursor(FALSE);
 
-/*
-	DXGI_SWAP_CHAIN_DESC sd;
-	// in the order of the struct
-	sd.BufferDesc.Width = WINWIDTH;
-	sd.BufferDesc.Height = WINHEIGHT;
-	sd.BufferDesc.RefreshRate.Numerator = 60;
-	sd.BufferDesc.RefreshRate.Denominator = 1;
-	sd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-	sd.BufferDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
-	sd.BufferDesc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
-	sd.SampleDesc.Count = 1;
-	sd.SampleDesc.Quality = 0;
-	sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-	sd.BufferCount = 1;
-	sd.OutputWindow = hWnd;
-	sd.Windowed = TRUE;
-	sd.SwapEffect = DXGI_SWAP_EFFECT_SEQUENTIAL;
-	sd.Flags = 0;
-*/
 	const static DXGI_SWAP_CHAIN_DESC sd = {{WINWIDTH, WINHEIGHT, {60, 1},  DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED, DXGI_MODE_SCALING_UNSPECIFIED }, {1, 0}, DXGI_USAGE_RENDER_TARGET_OUTPUT, 1, NULL, TRUE, DXGI_SWAP_EFFECT_SEQUENTIAL, 0};
+
 	//
 	DXGI_SWAP_CHAIN_DESC temp;
 	temp = sd;
@@ -294,19 +269,8 @@ __declspec( naked )  void __cdecl winmain()
 
 
 #ifdef COMPILENWRITEOUTSHADERS
- 	// HRESULT hr = D3DX11CompileFromFile( "qjulia4D.hlsl", NULL, NULL, "CS_QJulia4D", "cs_5_0", 0, 0, NULL, &pByteCodeBlob, &pErrorBlob, NULL);
-	
 	// seems to require DirectX 11.1  
-	HRESULT hr = D3DCompileFromFile(L"qjulia4D.hlsl", NULL, NULL, "CS_QJulia4D", "cs_5_0", NULL, NULL, &pByteCodeBlob, &pErrorBlob );
-/*	
-	char array[64];
-	int length = strlen(pComputeShader);
-	int test = sprintf(array, "%d", length);
-	MessageBoxA(NULL, array, "Error", MB_OK | MB_ICONERROR);
-
-	HRESULT hr = D3DCompile(pComputeShader, length, NULL, NULL, NULL, "main", "cs_5_0", 0, 0, &pByteCodeBlob, &pErrorBlob);
-*/
-	char* ErrMessage;
+	HRESULT hr = D3DCompileFromFile(L"qjulia4D.hlsl", NULL, NULL, "CS_QJulia4D", "cs_5_0", D3DCOMPILE_OPTIMIZATION_LEVEL3, 0, &pByteCodeBlob, &pErrorBlob);
 
 	if(hr != S_OK)
 		MessageBoxA(NULL, (char *)pErrorBlob->lpVtbl->GetBufferPointer(pErrorBlob), "Error", MB_OK | MB_ICONERROR);
@@ -364,7 +328,7 @@ __declspec( naked )  void __cdecl winmain()
 		if (CurrentTime > 30000 || GetAsyncKeyState(VK_ESCAPE)) 
 			BRunning = FALSE;
 
-		dt = CurrentTime / (1000.0 * 20);
+		dt = CurrentTime / (1000.0f * 20.0f);
 
 	    UpdateMu( &MuT, MuA, MuB );
  	    Interpolate( MuC, MuT, MuA, MuB );
@@ -376,43 +340,39 @@ __declspec( naked )  void __cdecl winmain()
 		D3D11_MAPPED_SUBRESOURCE msr;
   		pImmediateContext->lpVtbl->Map(pImmediateContext,(ID3D11Resource *)pcbFractal, 0, D3D11_MAP_WRITE_DISCARD, 0,  &msr);
 
-    		static QJulia4DConstants mc;
+    	static QJulia4DConstants mc;
 
-    		mc.c_height = (int)WINHEIGHT;
-    		mc.c_width  = (int)WINWIDTH;
-    		mc.diffuse[0] = ColorC[0];
-    		mc.diffuse[1] = ColorC[1];
-    		mc.diffuse[2] = ColorC[2];
-    		mc.diffuse[3] = ColorC[3];
-    		mc.epsilon = Epsilon;
-    		mc.mu[0] = MuC[0];
-    		mc.mu[1] = MuC[1];
-    		mc.mu[2] = MuC[2];
-    		mc.mu[3] = MuC[3];
- /*   		for (int j=0; j<3; j++)
-    			for (int i=0; i<3; i++)
-     		 mc.orientation[i + 4*j] = 0.0; //trackBall.GetRotationMatrix()(j,i);
- */			
-			mc.orientation[0] = 1.0;
-			mc.orientation[1] = 0.0;
-			mc.orientation[2] = 0.0;
-			mc.orientation[3] = 0.0;
-			mc.orientation[4] = 0.0;
-			mc.orientation[5] = 1.0;
-			mc.orientation[6] = 0.0;
-			mc.orientation[7] = 0.0;
-			mc.orientation[8] = 0.0;
-			mc.orientation[9] = 0.0;
-			mc.orientation[10] = 1.0;
-			mc.orientation[11] = 0.0;
-			mc.orientation[12] = 0.0;
-			mc.orientation[13] = 0.0;
-			mc.orientation[14] = 0.0;
-			mc.orientation[15] = 1.0;
+    	mc.c_height = (int)WINHEIGHT;
+    	mc.c_width  = (int)WINWIDTH;
+    	mc.diffuse[0] = ColorC[0];
+    	mc.diffuse[1] = ColorC[1];
+    	mc.diffuse[2] = ColorC[2];
+    	mc.diffuse[3] = ColorC[3];
+    	mc.epsilon = Epsilon;
+    	mc.mu[0] = MuC[0];
+    	mc.mu[1] = MuC[1];
+    	mc.mu[2] = MuC[2];
+    	mc.mu[3] = MuC[3];
+		mc.orientation[0] = 1.0;
+		mc.orientation[1] = 0.0;
+		mc.orientation[2] = 0.0;
+		mc.orientation[3] = 0.0;
+		mc.orientation[4] = 0.0;
+		mc.orientation[5] = 1.0;
+		mc.orientation[6] = 0.0;
+		mc.orientation[7] = 0.0;
+		mc.orientation[8] = 0.0;
+		mc.orientation[9] = 0.0;
+		mc.orientation[10] = 1.0;
+		mc.orientation[11] = 0.0;
+		mc.orientation[12] = 0.0;
+		mc.orientation[13] = 0.0;
+		mc.orientation[14] = 0.0;
+		mc.orientation[15] = 1.0;
 
-   			mc.selfShadow = selfShadow;
-    		mc.zoom = zoom;
-    		*(QJulia4DConstants *)msr.pData = mc;
+   		mc.selfShadow = selfShadow;
+    	mc.zoom = zoom;
+    	*(QJulia4DConstants *)msr.pData = mc;
   		pImmediateContext->lpVtbl->Unmap(pImmediateContext, (ID3D11Resource *)pcbFractal,0);
 
     	// Set compute shader
@@ -420,7 +380,6 @@ __declspec( naked )  void __cdecl winmain()
 
     	// For CS output
     	pImmediateContext->lpVtbl->CSSetUnorderedAccessViews(pImmediateContext, 0, 1, &pComputeOutput, NULL );
-
 
     	// For CS constant buffer
     	pImmediateContext->lpVtbl->CSSetConstantBuffers(pImmediateContext, 0, 1, &pcbFractal );
@@ -439,16 +398,15 @@ __declspec( naked )  void __cdecl winmain()
 	    pSwapChain->lpVtbl->Release(pSwapChain);	 
 	    pTexture->lpVtbl->Release(pTexture);	
 
-		pByteCodeBlob->lpVtbl->Release(pByteCodeBlob);
-		//pErrorBlob->lpVtbl->Release(pErrorBlob);
-		//pCompressedByteCodeBlob->lpVtbl->Release(pCompressedByteCodeBlob);
+//		pByteCodeBlob->lpVtbl->Release(pByteCodeBlob);
+//		pErrorBlob->lpVtbl->Release(pErrorBlob);
+		pCompressedByteCodeBlob->lpVtbl->Release(pCompressedByteCodeBlob);
 
     	pcbFractal->lpVtbl->Release(pcbFractal);
 		pComputeOutput->lpVtbl->Release(pComputeOutput);
-
 #endif
 
-#if 0 // defined(WELLBEHAVIOUR)
+#if 0 
     return (int) msg.wParam;
 #else
 	}
