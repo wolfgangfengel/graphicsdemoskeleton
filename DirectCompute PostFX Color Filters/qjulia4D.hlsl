@@ -4,7 +4,7 @@
 //
 // by Wolfgang Engel 
 //
-// Last time modified: 12/31/2013 
+// Last time modified: 01/01/2014 
 //
 ///////////////////////////////////////////////////////////////////////
 
@@ -22,8 +22,8 @@ RWStructuredBuffer<float4> output : register (u0); // UAV 0
 // constants that can change per frame
 cbuffer cbCS : register( b0 )
 { 
-	int c_height : packoffset(c0.x);
-	int c_width : packoffset(c0.y);		// size view port
+	uint c_height : packoffset(c0.x);
+	uint c_width : packoffset(c0.y);		// size view port
 	float c_epsilon : packoffset(c0.z);	// julia detail  	
 	int c_selfShadow : packoffset(c0.w);  // selfshadowing on or off  
 	float4 c_diffuse : packoffset(c1);	// diffuse shading color

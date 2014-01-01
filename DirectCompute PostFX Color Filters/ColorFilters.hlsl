@@ -4,7 +4,7 @@
 //
 // by Wolfgang Engel 
 //
-// Last time modified: 12/31/2013
+// Last time modified: 01/01/2014
 //
 ///////////////////////////////////////////////////////////////////////
 StructuredBuffer<float4> Input : register( t0 );
@@ -15,8 +15,8 @@ RWTexture2D<float4> Result : register (u0);
 
 cbuffer cbCS : register(b0)
 {
-	int c_height : packoffset(c0.x);
-	int c_width : packoffset(c0.y);		// size view port
+	uint c_height : packoffset(c0.x);
+	uint c_width : packoffset(c0.y);		// size view port
 /*	
 	This is in the constant buffer as well but not used in this shader, so I just keep it in here as a comment
 	
@@ -52,18 +52,41 @@ void PostFX( uint3 Gid : SV_GroupID, uint3 DTid : SV_DispatchThreadID, uint3 GTi
 {
     // copy the number of values == groupthreads into the shared memory
 	uint idx = DTid.x + DTid.y * c_width;
-	sharedMem[GI] = Input[idx];
-		
-	// Contrast
-	sharedMem[GI] = sharedMem[GI] - Contrast * (sharedMem[GI] - 1.0f) * sharedMem[GI] * (sharedMem[GI] - 0.5f);
 
-	// Saturation
-	float Lum = dot(sharedMem[GI], float3(0.2126, 0.7152, 0.0722));
-	sharedMem[GI] = lerp(Lum.xxx, sharedMem[GI].xyz, Saturation);
-	
-	// Color Correction
-	sharedMem[GI] = sharedMem[GI] * float3(ColorCorrectRed, ColorCorrectGreen, ColorCorrectBlue)  * float3(2.0f, 2.0f, 2.0f) + float3(ColorAddRed, ColorAddGreen, ColorAddBlue);
+	// load from device memory == structured buffer to thread group shared memory
+	sharedMem[GI] = Input[idx].xyz;
+
+	// wait until the data is written
+	GroupMemoryBarrierWithGroupSync();
+
+	float3 Color;
+
+	//
+	// the decision between using thread group shared memory or register based memory depends on 
+	// several factors ... check out the UCSD class slides
+	//
+
+	// make sure we are not running out of bounds
+	// also no memory barrier inside an if statement 
+	// -> everything in if statement is only reading thread group shared memory or register based
+	if (idx < (c_width * c_height - 1))
+	{
+		// load from thread group shared memory to register based memory
+		// register based memory doesn't need a barrier 
+		float3 RegMemory = sharedMem[GI];
+
+		// Contrast
+		float3 ContrastReg = RegMemory - Contrast * (RegMemory - 1.0f) * RegMemory * (RegMemory - 0.5f);
+
+		// Saturation
+		// load result into register based memory ...
+		float Lum = dot(ContrastReg, float3(0.2126, 0.7152, 0.0722));
+		float3 SatColor = lerp(Lum.xxx, ContrastReg, Saturation);
+
+		// Color Correction
+		Color = SatColor * float3(ColorCorrectRed, ColorCorrectGreen, ColorCorrectBlue)  * float3(2.0f, 2.0f, 2.0f) + float3(ColorAddRed, ColorAddGreen, ColorAddBlue);
+	}
 
 	// write out into the RWTexture2D == backbuffer
-	Result[DTid.xy] = float4(sharedMem[GI], 1.0);
+	Result[DTid.xy] = float4(Color, 1.0);
 }

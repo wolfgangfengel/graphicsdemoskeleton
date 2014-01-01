@@ -4,7 +4,7 @@
 //
 // by Wolfgang Engel 
 //
-// Last time modified: 12/31/2013
+// Last time modified: 01/01/2014
 //
 ///////////////////////////////////////////////////////////////////////
 #define WIN32_LEAN_AND_MEAN
@@ -248,8 +248,9 @@ __declspec( naked )  void __cdecl winmain()
 	//
 	typedef struct
 	{
-		int c_height;
-		int c_width;      // view port size
+		// Julia 4D constants
+		unsigned int c_height;
+		unsigned int c_width;      // view port size
 		float epsilon;  // detail julia
 		int selfShadow;  // selfshadowing on or off 
 		float diffuse[4]; // diffuse shading color
@@ -257,6 +258,7 @@ __declspec( naked )  void __cdecl winmain()
 		float orientation[4*4]; // rotation matrix
 		float zoom;
 
+		// PostFX constants
 		float Saturation;
 		float ColorCorrect[3];
 		float ColorAdd[3];
@@ -376,7 +378,7 @@ __declspec( naked )  void __cdecl winmain()
 			)
 			BStopRunning = TRUE;
 
-		dt = CurrentTime / (1000.0f * 20.0f);
+		dt = CurrentTime / (20000.0f);
 
 	    UpdateMu( &MuT, MuA, MuB );
  	    Interpolate( MuC, MuT, MuA, MuB );
