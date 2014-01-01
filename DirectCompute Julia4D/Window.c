@@ -4,7 +4,7 @@
 //
 // by Wolfgang Engel 
 //
-// Last time modified: 11/07/2013 
+// Last time modified: 12/31/2013 
 //
 ///////////////////////////////////////////////////////////////////////
 #define WIN32_LEAN_AND_MEAN
@@ -15,17 +15,14 @@
 #include <rpcsal.h>
 
 #define DEFINE_GUIDW(name, l, w1, w2, b1, b2, b3, b4, b5, b6, b7, b8) const GUID DECLSPEC_SELECTANY name = { l, w1, w2, { b1, b2,  b3,  b4,  b5,  b6,  b7,  b8 } }
-//DEFINE_GUIDW(IID_ID3D10Texture2D,0x9B7E4C04,0x342C,0x4106,0xA1,0x9F,0x4F,0x27,0x04,0xF6,0x89,0xF0);
 DEFINE_GUIDW(IID_ID3D11Texture2D,0x6f15aaf2,0xd208,0x4e89,0x9a,0xb4,0x48,0x95,0x35,0xd3,0x4f,0x9c);
 
 #include <d3d11.h>
-//#include <d3dx11.h>
-
 #include <d3dcompiler.h>
 
 // define the size of the window
-#define WINWIDTH 800 
-#define WINHEIGHT 600
+#define WINWIDTH 1280 
+#define WINHEIGHT 720
 #define WINPOSX 200 
 #define WINPOSY 200
 
@@ -170,7 +167,10 @@ __declspec( naked )  void __cdecl winmain()
 	ID3D11DeviceContext *pImmediateContext;
 
 	ID3D11Buffer*		    	pcbFractal;      // constant buffer
-	ID3D11UnorderedAccessView*  pComputeOutput = NULL;  // compute output
+	ID3D11UnorderedAccessView*  pComputeOutput;  // compute output
+
+	static D3D11_BUFFER_DESC Desc;
+
 
 	static float Epsilon                    = 0.003f;
 	static float ColorT                     = 0.0f;
@@ -186,14 +186,12 @@ __declspec( naked )  void __cdecl winmain()
 	BOOL selfShadow = TRUE;
 	float zoom = 1.0f;
 
-	float timer = 0;
-
 	// timer global variables
 	DWORD		StartTime;
-	DWORD		CurrentTime;
+	static DWORD CurrentTime;
 
 	// keep track if the game loop is still running
-	BOOL		BRunning;
+	static BOOL BStartRunning;
 
 	// the most simple window
 	HWND hWnd = CreateWindow(L"edit", 0, WS_POPUP | WS_VISIBLE, WINPOSX, WINPOSY, WINWIDTH, WINHEIGHT, 0, 0, 0, 0);
@@ -244,14 +242,12 @@ __declspec( naked )  void __cdecl winmain()
 		int selfShadow;  // selfshadowing on or off 
 		float orientation[4*4]; // rotation matrix
 		float zoom;
-	} QJulia4DConstants;
+	} MainConstantBuffer;
 
-    D3D11_BUFFER_DESC Desc;
     Desc.Usage = D3D11_USAGE_DYNAMIC;
     Desc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
     Desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-    Desc.MiscFlags = 0;
-    Desc.ByteWidth = ((sizeof( QJulia4DConstants ) + 15)/16)*16; // must be multiple of 16 bytes
+	Desc.ByteWidth = ((sizeof(MainConstantBuffer)+15) / 16) * 16; // must be multiple of 16 bytes
     pd3dDevice->lpVtbl->CreateBuffer(pd3dDevice, &Desc, NULL, &pcbFractal);
 
     // create shader unordered access view on back buffer for compute shader to write into texture
@@ -260,10 +256,7 @@ __declspec( naked )  void __cdecl winmain()
 	//
 	// compile a compute shader
 	//
-	ID3DBlob *pByteCodeBlob = NULL;
-	ID3DBlob *pErrorBlob = NULL;
-	ID3D11ComputeShader *pCompiledComputeShader = NULL;
-
+	ID3D11ComputeShader *pCompiledComputeShader;
 
 	HRESULT hr = pd3dDevice->lpVtbl->CreateComputeShader(pd3dDevice, g_CS_QJulia4D, sizeof(g_CS_QJulia4D), NULL, &pCompiledComputeShader);
 
@@ -274,17 +267,14 @@ __declspec( naked )  void __cdecl winmain()
 
 	// setup timer 
 	StartTime = GetTickCount();
-	CurrentTime = 0;	
 
 	// seed the random number generator
 	SetSeed((unsigned int)GetCurrentTime());
-	//inlineSrand((unsigned int)GetCurrentTime());
 
 	// set the game loop to running by default
-	BRunning = TRUE;
 	MSG msg;
 
-	while (BRunning)
+	while (!BStartRunning)
 	{
 #if defined(WELLBEHAVIOUR)
 		// Just remove the message
@@ -295,7 +285,7 @@ __declspec( naked )  void __cdecl winmain()
 
 		// go out of game loop and shutdown
 		if (CurrentTime > 30000 || GetAsyncKeyState(VK_ESCAPE)) 
-			BRunning = FALSE;
+			BStartRunning = TRUE;
 
 		dt = CurrentTime / (1000.0f * 20.0f);
 
@@ -309,40 +299,41 @@ __declspec( naked )  void __cdecl winmain()
 		D3D11_MAPPED_SUBRESOURCE msr;
   		pImmediateContext->lpVtbl->Map(pImmediateContext,(ID3D11Resource *)pcbFractal, 0, D3D11_MAP_WRITE_DISCARD, 0,  &msr);
 
-    	static QJulia4DConstants mc;
+		static MainConstantBuffer* mc;
+		mc = msr.pData;
 
-    	mc.c_height = (int)WINHEIGHT;
-    	mc.c_width  = (int)WINWIDTH;
-    	mc.diffuse[0] = ColorC[0];
-    	mc.diffuse[1] = ColorC[1];
-    	mc.diffuse[2] = ColorC[2];
-    	mc.diffuse[3] = ColorC[3];
-    	mc.epsilon = Epsilon;
-    	mc.mu[0] = MuC[0];
-    	mc.mu[1] = MuC[1];
-    	mc.mu[2] = MuC[2];
-    	mc.mu[3] = MuC[3];
-		mc.orientation[0] = 1.0;
-		mc.orientation[1] = 0.0;
-		mc.orientation[2] = 0.0;
-		mc.orientation[3] = 0.0;
-		mc.orientation[4] = 0.0;
-		mc.orientation[5] = 1.0;
-		mc.orientation[6] = 0.0;
-		mc.orientation[7] = 0.0;
-		mc.orientation[8] = 0.0;
-		mc.orientation[9] = 0.0;
-		mc.orientation[10] = 1.0;
-		mc.orientation[11] = 0.0;
-		mc.orientation[12] = 0.0;
-		mc.orientation[13] = 0.0;
-		mc.orientation[14] = 0.0;
-		mc.orientation[15] = 1.0;
+    	mc->c_height = (int)WINHEIGHT;
+    	mc->c_width  = (int)WINWIDTH;
+    	mc->diffuse[0] = ColorC[0];
+    	mc->diffuse[1] = ColorC[1];
+    	mc->diffuse[2] = ColorC[2];
+    	mc->diffuse[3] = ColorC[3];
+    	mc->epsilon = Epsilon;
+    	mc->mu[0] = MuC[0];
+    	mc->mu[1] = MuC[1];
+    	mc->mu[2] = MuC[2];
+    	mc->mu[3] = MuC[3];
+		mc->orientation[0] = 1.0;
+//		mc->orientation[1] = 0.0;
+//		mc->orientation[2] = 0.0;
+//		mc->orientation[3] = 0.0;
+//		mc->orientation[4] = 0.0;
+		mc->orientation[5] = 1.0;
+//		mc->orientation[6] = 0.0;
+//		mc->orientation[7] = 0.0;
+//		mc->orientation[8] = 0.0;
+//		mc->orientation[9] = 0.0;
+		mc->orientation[10] = 1.0;
+//		mc->orientation[11] = 0.0;
+//		mc->orientation[12] = 0.0;
+//		mc->orientation[13] = 0.0;
+//		mc->orientation[14] = 0.0;
+		mc->orientation[15] = 1.0;
 
-   		mc.selfShadow = selfShadow;
-    	mc.zoom = zoom;
-    	*(QJulia4DConstants *)msr.pData = mc;
-  		pImmediateContext->lpVtbl->Unmap(pImmediateContext, (ID3D11Resource *)pcbFractal,0);
+   		mc->selfShadow = selfShadow;
+    	mc->zoom = zoom;
+
+		pImmediateContext->lpVtbl->Unmap(pImmediateContext, (ID3D11Resource *)pcbFractal,0);
 
     	// Set compute shader
     	pImmediateContext->lpVtbl->CSSetShader(pImmediateContext, pCompiledComputeShader, NULL, 0 );

@@ -1,3 +1,12 @@
+////////////////////////////////////////////////////////////////////////
+//
+// Port of Jan Vlietnick's Julia 4D demo 
+//
+// by Wolfgang Engel 
+//
+// Last time modified: 12/31/2013 
+//
+///////////////////////////////////////////////////////////////////////
 
 // Coded by Jan Vlietinck, 11 Oct 2009, V 1.4
 // http://users.skynet.be/fquake/
@@ -377,7 +386,7 @@ void CS_QJulia4D( uint3 Gid : SV_GroupID, uint3 DTid : SV_DispatchThreadID, uint
 { 
     float4 coord = float4((float)DTid.x, (float)DTid.y, 0.0f, 0.0f);
 
-    float2 size     = float2((float)c_width, (float)c_height);
+    float2 size     = float2(c_width, c_height);
     float scale     = min(size.x, size.y);
     float2 half     = float2(0.5f, 0.5f);
     float2 position = (coord.xy - half * size) / scale *BOUNDING_RADIUS_2 *zoom;
