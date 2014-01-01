@@ -14,7 +14,6 @@
 #include <rpcsal.h>
 
 #define DEFINE_GUIDW(name, l, w1, w2, b1, b2, b3, b4, b5, b6, b7, b8) const GUID DECLSPEC_SELECTANY name = { l, w1, w2, { b1, b2,  b3,  b4,  b5,  b6,  b7,  b8 } }
-//DEFINE_GUIDW(IID_ID3D10Texture2D,0x9B7E4C04,0x342C,0x4106,0xA1,0x9F,0x4F,0x27,0x04,0xF6,0x89,0xF0);
 DEFINE_GUIDW(IID_ID3D11Texture2D,0x6f15aaf2,0xd208,0x4e89,0x9a,0xb4,0x48,0x95,0x35,0xd3,0x4f,0x9c);
 
 #include <d3d11.h>
@@ -120,6 +119,7 @@ __declspec( naked )  void __cdecl winmain()
 	// Create a back buffer render target, get a view on it to clear it later
 	ID3D11Texture2D *pBackBuffer;
 	pSwapChain->lpVtbl->GetBuffer( pSwapChain, 0, (REFIID ) &IID_ID3D11Texture2D, (LPVOID*)&(pBackBuffer) ) ;
+
 	pd3dDevice->lpVtbl->CreateRenderTargetView( pd3dDevice, (ID3D11Resource*)pBackBuffer, NULL, &pRenderTargetView );
 	pImmediateContext->lpVtbl->OMSetRenderTargets( pImmediateContext, 1, &pRenderTargetView, NULL );
 
