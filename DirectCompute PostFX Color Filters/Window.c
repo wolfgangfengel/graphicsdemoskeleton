@@ -261,25 +261,22 @@ __declspec( naked )  void __cdecl winmain()
 	//
 	typedef struct
 	{
- 		float diffuse[4]; // diffuse shading color
-		float mu[4];    // quaternion julia parameter
-  		float epsilon;  // detail julia
-		int c_width;      // view port size
 		int c_height;
+		int c_width;      // view port size
+		float epsilon;  // detail julia
 		int selfShadow;  // selfshadowing on or off 
+		float diffuse[4]; // diffuse shading color
+		float mu[4];    // quaternion julia parameter
 		float orientation[4*4]; // rotation matrix
 		float zoom;
-	} QJulia4DConstants;
 
-	// Constant buffer layout for color filters
-	typedef struct
-	{
 		// seems like those need to be aligned to float4
-		float WidthHeightSaturation[4];
-		float ColorCorrect[4];
-		float ColorAdd[4];
-		float Contrast[4];
-	} gConstantDataFilter;
+		float Saturation;
+		float ColorCorrect[3];
+		float ColorAdd[3];
+		float Contrast[3];
+
+	} QJulia4DConstants;
 
 
 	HRESULT hr; // track a few return statements
@@ -295,20 +292,6 @@ __declspec( naked )  void __cdecl winmain()
 #if defined(_DEBUG)
 	if (hr != S_OK)
 		MessageBoxA(NULL, "Julia4D constant buffer failed", "Error", MB_OK | MB_ICONERROR);
-#endif
-
-	// for filter kernel compute shader
-	//	D3D11_BUFFER_DESC Desc;
-	Desc.Usage = D3D11_USAGE_DYNAMIC;
-	Desc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-	Desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-	Desc.MiscFlags = 0;
-	Desc.ByteWidth = (((sizeof(gConstantDataFilter) + 15) / 16) * 16); // must be multiple of 16 bytes
-	hr = pd3dDevice->lpVtbl->CreateBuffer(pd3dDevice, &Desc, NULL, &pConstantFilterData);
-
-#if defined(_DEBUG)
-	if (hr != S_OK)
-		MessageBoxA(NULL, "Color Filter constant buffer failed", "Error", MB_OK | MB_ICONERROR);
 #endif
 
 	// 
@@ -419,13 +402,17 @@ __declspec( naked )  void __cdecl winmain()
 
     	static QJulia4DConstants mc;
 
-    	mc.c_height = WINHEIGHT;
-    	mc.c_width  = WINWIDTH;
-    	mc.diffuse[0] = ColorC[0];
+		// this is a continous constant buffer
+		// that means each value is aligned in the buffer one after each other without any states
+		// also this needs to be in the same order as the constant struct in the shader
+    	mc.c_height = (float)WINHEIGHT;
+		mc.c_width = (float)WINWIDTH;
+		mc.epsilon = Epsilon;
+		mc.selfShadow = selfShadow;
+		mc.diffuse[0] = ColorC[0];
     	mc.diffuse[1] = ColorC[1];
     	mc.diffuse[2] = ColorC[2];
     	mc.diffuse[3] = ColorC[3];
-    	mc.epsilon = Epsilon;
     	mc.mu[0] = MuC[0];
     	mc.mu[1] = MuC[1];
     	mc.mu[2] = MuC[2];
@@ -446,10 +433,19 @@ __declspec( naked )  void __cdecl winmain()
 		mc.orientation[13] = 0.0;
 		mc.orientation[14] = 0.0;
 		mc.orientation[15] = 1.0;
-
-   		mc.selfShadow = selfShadow;
     	mc.zoom = zoom;
-    	*(QJulia4DConstants *)msr.pData = mc;
+		mc.Saturation =  (gSaturation < 0.0f) ? 0.0f : (gSaturation > 1.0f) ? 1.0f : gSaturation;
+		mc.ColorCorrect[0] = 0.5f;
+		mc.ColorCorrect[1] = 0.5f;
+		mc.ColorCorrect[2] = 0.5f;
+		mc.ColorAdd[0] = 0.0f;
+		mc.ColorAdd[1] = 0.0f;
+		mc.ColorAdd[2] = 0.0f;
+		mc.Contrast[0] = 0.0f;
+		mc.Contrast[1] = 0.0f;
+		mc.Contrast[2] = 0.0f;
+
+		*(QJulia4DConstants *)msr.pData = mc;
   		pImmediateContext->lpVtbl->Unmap(pImmediateContext, (ID3D11Resource *)pcbFractal,0);
 
     	// Set compute shader
@@ -465,34 +461,6 @@ __declspec( naked )  void __cdecl winmain()
     	// Run the CS
 		pImmediateContext->lpVtbl->Dispatch(pImmediateContext, WINWIDTH / THREADSX, WINHEIGHT / THREADSY, 1);
 
-
-		//
-		// constant data for PostFX
-		//
-		D3D11_MAPPED_SUBRESOURCE MappedResource;
-		pImmediateContext->lpVtbl->Map(pImmediateContext, (ID3D11Resource *)pConstantFilterData, 0, D3D11_MAP_WRITE_DISCARD, 0, &MappedResource);
-		static gConstantDataFilter FilterData;
-
-		FilterData.WidthHeightSaturation[0] = WINWIDTH;
-		FilterData.WidthHeightSaturation[1] = WINHEIGHT;
-		FilterData.WidthHeightSaturation[2] = (gSaturation < 0.0f) ? 0.0f : (gSaturation > 1.0f) ? 1.0f : gSaturation;
-		FilterData.WidthHeightSaturation[3] = 0.0f;
-		FilterData.ColorCorrect[0] = 0.5f;
-		FilterData.ColorCorrect[1] = 0.5f;
-		FilterData.ColorCorrect[2] = 0.5f;
-		FilterData.ColorCorrect[3] = 0.0f;
-		FilterData.ColorAdd[0] = 0.0f;
-		FilterData.ColorAdd[1] = 0.0f;
-		FilterData.ColorAdd[2] = 0.0f;
-		FilterData.ColorAdd[3] = 0.0f;
-		FilterData.Contrast[0] = 0.0f;
-		FilterData.Contrast[1] = 0.0f;
-		FilterData.Contrast[2] = 0.0f;
-		FilterData.Contrast[3] = 0.0f;
-
-		*(gConstantDataFilter *)MappedResource.pData = FilterData;
-		pImmediateContext->lpVtbl->Unmap(pImmediateContext, (ID3D11Resource *)pConstantFilterData, 0);
-
 		// Set compute shader
 		pImmediateContext->lpVtbl->CSSetShader(pImmediateContext, pCompiledPostFXComputeShader, NULL, 0);
 
@@ -501,7 +469,7 @@ __declspec( naked )  void __cdecl winmain()
 
 		// For CS constant buffer
 		// set constanct buffer b0
-		pImmediateContext->lpVtbl->CSSetConstantBuffers(pImmediateContext, 0, 1, &pConstantFilterData);
+		pImmediateContext->lpVtbl->CSSetConstantBuffers(pImmediateContext, 0, 1, &pcbFractal);
 
 		// read the structured buffer
 		pImmediateContext->lpVtbl->CSSetShaderResources(pImmediateContext, 0, 1, &pComputeShaderSRV);
@@ -528,7 +496,6 @@ __declspec( naked )  void __cdecl winmain()
 	    pSwapChain->lpVtbl->Release(pSwapChain);	 
 	    pTexture->lpVtbl->Release(pTexture);	
     	pcbFractal->lpVtbl->Release(pcbFractal);
-		pConstantFilterData->lpVtbl->Release(pConstantFilterData);
 		pStructuredBuffer->lpVtbl->Release(pStructuredBuffer);
 		pComputeOutputUAV->lpVtbl->Release(pComputeOutputUAV);
 		pComputeShaderSRV->lpVtbl->Release(pComputeShaderSRV);

@@ -20,14 +20,14 @@ RWStructuredBuffer<BufferStruct> output : register (u0); // UAV 0
 
 cbuffer cbCS : register( b0 )
 { 
-	float4 c_diffuse;	// diffuse shading color
-	float4 c_mu;		// julia quaternion parameter
-	float c_epsilon;	// julia detail  	
-	int c_width;		// size view port
-	int c_height;
-	int c_selfShadow;  // selfshadowing on or off  
-	float4x4 rotation;   
-	float zoom;
+	int c_height : packoffset(c0.x);
+	int c_width : packoffset(c0.y);		// size view port
+	float c_epsilon : packoffset(c0.z);	// julia detail  	
+	int c_selfShadow : packoffset(c0.w);  // selfshadowing on or off  
+	float4 c_diffuse : packoffset(c1);	// diffuse shading color
+	float4 c_mu : packoffset(c2);		// julia quaternion parameter
+	float4x4 rotation : packoffset(c3);
+	float zoom : packoffset(c7.x);
 };
 
 

@@ -15,10 +15,23 @@ RWTexture2D<float4> Result : register (u0);
 
 cbuffer cbCS : register(b0)
 {
-	float4 WidthHeightSaturation;
-	float4 ColorCorrect;
-	float4 ColorAdd;
-	float4 Contrast;
+	int c_height : packoffset(c0.x);
+	int c_width : packoffset(c0.y);		// size view port
+/*	float c_epsilon : packoffset(c0.z);	// julia detail  	
+	int c_selfShadow : packoffset(c0.w);  // selfshadowing on or off  
+	float4 c_diffuse : packoffset(c1);	// diffuse shading color
+	float4 c_mu : packoffset(c2);		// julia quaternion parameter
+	float4x4 rotation : packoffset(c3);
+	float zoom : packoffset(c7.x);
+*/
+	float Saturation : packoffset(c7.y);
+	float ColorCorrectRed : packoffset(c7.z);
+	float ColorCorrectGreen : packoffset(c7.w);
+	float ColorCorrectBlue : packoffset(c8.x);
+	float ColorAddRed : packoffset(c8.y);
+	float ColorAddGreen : packoffset(c8.z);
+	float ColorAddBlue : packoffset(c8.w);
+	float3 Contrast : packoffset(c9);
 };
 
 #define groupthreads THREADX * THREADY
@@ -31,7 +44,7 @@ groupshared float4 sharedMem[groupthreads];
 [numthreads(THREADX, THREADY, 1)]
 void PostFX( uint3 Gid : SV_GroupID, uint3 DTid : SV_DispatchThreadID, uint3 GTid : SV_GroupThreadID, uint GI : SV_GroupIndex  )
 {
-	float2 size = float2(WidthHeightSaturation.x, WidthHeightSaturation.y);
+	float2 size = float2(c_width, c_height);
 
     // copy the number of values == groupthreads into the shared memory
 	uint idx = DTid.x + DTid.y * size.x;
@@ -48,10 +61,11 @@ void PostFX( uint3 Gid : SV_GroupID, uint3 DTid : SV_DispatchThreadID, uint3 GTi
 
 		// Saturation
 		float Lum = dot(color, float3(0.2126, 0.7152, 0.0722));
-		color = lerp(Lum.xxx, color, WidthHeightSaturation.z);
+		color = lerp(Lum.xxx, color, Saturation);
 	
 		// Color Correction
-		color = color *ColorCorrect * float3(2.0f, 2.0f, 2.0f) + ColorAdd;
+		color = color * float3(ColorCorrectRed, ColorCorrectGreen, ColorCorrectBlue)  * float3(2.0f, 2.0f, 2.0f) + float3(ColorAddRed, ColorAddGreen, ColorAddBlue);
+		
 	}
 
     Result[DTid.xy] = float4(color, 0.0); 
