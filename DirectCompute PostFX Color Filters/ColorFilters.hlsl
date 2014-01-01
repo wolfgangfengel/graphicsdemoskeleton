@@ -44,7 +44,7 @@ groupshared float4 sharedMem[groupthreads];
 [numthreads(THREADX, THREADY, 1)]
 void PostFX( uint3 Gid : SV_GroupID, uint3 DTid : SV_DispatchThreadID, uint3 GTid : SV_GroupThreadID, uint GI : SV_GroupIndex  )
 {
-	float2 size = float2(c_width, c_height);
+	uint2 size = uint2(c_width, c_height);
 
     // copy the number of values == groupthreads into the shared memory
 	uint idx = DTid.x + DTid.y * size.x;

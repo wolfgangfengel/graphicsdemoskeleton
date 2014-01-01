@@ -15,12 +15,9 @@
 #include <rpcsal.h>
 
 #define DEFINE_GUIDW(name, l, w1, w2, b1, b2, b3, b4, b5, b6, b7, b8) const GUID DECLSPEC_SELECTANY name = { l, w1, w2, { b1, b2,  b3,  b4,  b5,  b6,  b7,  b8 } }
-//DEFINE_GUIDW(IID_ID3D10Texture2D,0x9B7E4C04,0x342C,0x4106,0xA1,0x9F,0x4F,0x27,0x04,0xF6,0x89,0xF0);
 DEFINE_GUIDW(IID_ID3D11Texture2D,0x6f15aaf2,0xd208,0x4e89,0x9a,0xb4,0x48,0x95,0x35,0xd3,0x4f,0x9c);
 
 #include <d3d11.h>
-//#include <d3dx11.h>
-
 #include <d3dcompiler.h>
 
 // define the size of the window
@@ -34,8 +31,6 @@ DEFINE_GUIDW(IID_ID3D11Texture2D,0x6f15aaf2,0xd208,0x4e89,0x9a,0xb4,0x48,0x95,0x
 
 #define WINPOSX 200 
 #define WINPOSY 200
-
-
 
 // makes the applicaton behave well with windows
 // allows to remove some system calls to reduce size
@@ -192,10 +187,7 @@ __declspec( naked )  void __cdecl winmain()
 	static D3D11_SHADER_RESOURCE_VIEW_DESC sbSRVDesc;
 	static D3D11_BUFFER_DESC Desc;
 
-
-
 	static float gSaturation = 1.0f;
-
 
 	static float Epsilon                    = 0.003f;
 	static float ColorT                     = 0.0f;
@@ -210,8 +202,6 @@ __declspec( naked )  void __cdecl winmain()
 
 	BOOL selfShadow = TRUE;
 	float zoom = 1.0f;
-
-	float timer = 0;
 
 	// timer global variables
 	DWORD		StartTime;
@@ -270,16 +260,15 @@ __declspec( naked )  void __cdecl winmain()
 		float orientation[4*4]; // rotation matrix
 		float zoom;
 
-		// seems like those need to be aligned to float4
 		float Saturation;
 		float ColorCorrect[3];
 		float ColorAdd[3];
 		float Contrast[3];
-
 	} QJulia4DConstants;
 
-
+#if defined(_DEBUG)
 	HRESULT hr; // track a few return statements
+#endif
 
 	// constant buffer for Julia4D
     Desc.Usage = D3D11_USAGE_DYNAMIC;
@@ -287,7 +276,10 @@ __declspec( naked )  void __cdecl winmain()
     Desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
     Desc.MiscFlags = 0;
     Desc.ByteWidth = ((sizeof( QJulia4DConstants ) + 15) / 16) * 16; // must be multiple of 16 bytes
-    hr = pd3dDevice->lpVtbl->CreateBuffer(pd3dDevice, &Desc, NULL, &pcbFractal);
+#if defined(_DEBUG)
+	hr =
+#endif
+		pd3dDevice->lpVtbl->CreateBuffer(pd3dDevice, &Desc, NULL, &pcbFractal);
 
 #if defined(_DEBUG)
 	if (hr != S_OK)
@@ -300,7 +292,7 @@ __declspec( naked )  void __cdecl winmain()
 	typedef struct
 	{
 		float color[4];
-	}BufferStruct;
+	} BufferStruct;
 
 	sbDesc.BindFlags = D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE;
 	sbDesc.CPUAccessFlags = 0;
@@ -319,7 +311,10 @@ __declspec( naked )  void __cdecl winmain()
 	sbUAVDesc.Buffer.NumElements = sbDesc.ByteWidth / sbDesc.StructureByteStride;
 	sbUAVDesc.Format = DXGI_FORMAT_UNKNOWN;
 	sbUAVDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
-	hr = pd3dDevice->lpVtbl->CreateUnorderedAccessView(pd3dDevice, (ID3D11Resource *)pStructuredBuffer, &sbUAVDesc, &pComputeOutputUAV);
+#if defined(_DEBUG)
+	hr =
+#endif
+		pd3dDevice->lpVtbl->CreateUnorderedAccessView(pd3dDevice, (ID3D11Resource *)pStructuredBuffer, &sbUAVDesc, &pComputeOutputUAV);
 
 #if defined(_DEBUG)
 	if (hr != S_OK)
@@ -334,7 +329,10 @@ __declspec( naked )  void __cdecl winmain()
 	sbSRVDesc.Buffer.NumElements = sbUAVDesc.Buffer.NumElements;
 	sbSRVDesc.Format = DXGI_FORMAT_UNKNOWN;
 	sbSRVDesc.ViewDimension = D3D11_SRV_DIMENSION_BUFFER;
-	hr = pd3dDevice->lpVtbl->CreateShaderResourceView(pd3dDevice, (ID3D11Resource *)pStructuredBuffer, &sbSRVDesc, &pComputeShaderSRV);
+#if defined(_DEBUG)
+	hr =
+#endif
+		pd3dDevice->lpVtbl->CreateShaderResourceView(pd3dDevice, (ID3D11Resource *)pStructuredBuffer, &sbSRVDesc, &pComputeShaderSRV);
 
 #if defined(_DEBUG)
 	if (hr != S_OK)
@@ -347,16 +345,19 @@ __declspec( naked )  void __cdecl winmain()
 
 
 	//
-	// compile a compute shader
+	// compile the compute shaders
 	//
-	ID3DBlob *pByteCodeBlob = NULL;
-	ID3DBlob *pErrorBlob = NULL;
 	ID3D11ComputeShader *pCompiledComputeShader = NULL;
 	ID3D11ComputeShader *pCompiledPostFXComputeShader = NULL;
 
-
-	hr = pd3dDevice->lpVtbl->CreateComputeShader(pd3dDevice, g_CS_QJulia4D, sizeof(g_CS_QJulia4D), NULL, &pCompiledComputeShader);
-	hr = pd3dDevice->lpVtbl->CreateComputeShader(pd3dDevice, g_PostFX, sizeof(g_PostFX), NULL, &pCompiledPostFXComputeShader);
+#if defined(_DEBUG)
+	hr =
+#endif
+		pd3dDevice->lpVtbl->CreateComputeShader(pd3dDevice, g_CS_QJulia4D, sizeof(g_CS_QJulia4D), NULL, &pCompiledComputeShader);
+#if defined(_DEBUG)
+	hr =
+#endif
+		pd3dDevice->lpVtbl->CreateComputeShader(pd3dDevice, g_PostFX, sizeof(g_PostFX), NULL, &pCompiledPostFXComputeShader);
 
 #if defined(_DEBUG)
 	if (hr != S_OK)
@@ -369,7 +370,6 @@ __declspec( naked )  void __cdecl winmain()
 
 	// seed the random number generator
 	SetSeed((unsigned int)GetCurrentTime());
-	//inlineSrand((unsigned int)GetCurrentTime());
 
 	// set the game loop to running by default
 	BRunning = TRUE;
@@ -385,7 +385,11 @@ __declspec( naked )  void __cdecl winmain()
 		CurrentTime = GetTickCount() - StartTime;
 
 		// go out of game loop and shutdown
-		if (CurrentTime > 30000 || GetAsyncKeyState(VK_ESCAPE)) 
+		if (CurrentTime > 30000 
+#if defined(WELLBEHAVIOUR) 
+			|| GetAsyncKeyState(VK_ESCAPE)
+#endif
+			)
 			BRunning = FALSE;
 
 		dt = CurrentTime / (1000.0f * 20.0f);
@@ -404,9 +408,9 @@ __declspec( naked )  void __cdecl winmain()
 
 		// this is a continous constant buffer
 		// that means each value is aligned in the buffer one after each other without any states
-		// also this needs to be in the same order as the constant struct in the shader
-    	mc.c_height = (float)WINHEIGHT;
-		mc.c_width = (float)WINWIDTH;
+		// this needs to be in the same order as the constant buffer struct in the shader
+    	mc.c_height = WINHEIGHT;
+		mc.c_width = WINWIDTH;
 		mc.epsilon = Epsilon;
 		mc.selfShadow = selfShadow;
 		mc.diffuse[0] = ColorC[0];
@@ -448,6 +452,10 @@ __declspec( naked )  void __cdecl winmain()
 		*(QJulia4DConstants *)msr.pData = mc;
   		pImmediateContext->lpVtbl->Unmap(pImmediateContext, (ID3D11Resource *)pcbFractal,0);
 
+		//
+		// run the Julia 4D code
+		//
+
     	// Set compute shader
     	pImmediateContext->lpVtbl->CSSetShader(pImmediateContext, pCompiledComputeShader, NULL, 0 );
 
@@ -481,13 +489,7 @@ __declspec( naked )  void __cdecl winmain()
 		// Run the CS
 		pImmediateContext->lpVtbl->Dispatch(pImmediateContext, WINWIDTH / THREADSX, WINHEIGHT / THREADSY, 1);
 
-		// set back the shader resource view to zero
-		ID3D11ShaderResourceView* pNull = NULL;
-		pImmediateContext->lpVtbl->CSSetShaderResources(pImmediateContext, 0, 1, &pNull);
 
-		// set back the UAV to zero ... just in case
-		ID3D11UnorderedAccessView* pNullUAV = NULL;
-		pImmediateContext->lpVtbl->CSSetUnorderedAccessViews(pImmediateContext, 0, 1, &pNullUAV, NULL);
 
 		// make it visible
 		pSwapChain->lpVtbl->Present(pSwapChain, 0, 0);
