@@ -4,7 +4,7 @@
 //
 // by Wolfgang Engel 
 //
-// Last time modified: 12/29/2013 
+// Last time modified: 12/31/2013
 //
 ///////////////////////////////////////////////////////////////////////
 StructuredBuffer<float4> Input : register( t0 );
@@ -17,7 +17,10 @@ cbuffer cbCS : register(b0)
 {
 	int c_height : packoffset(c0.x);
 	int c_width : packoffset(c0.y);		// size view port
-/*	float c_epsilon : packoffset(c0.z);	// julia detail  	
+/*	
+	This is in the constant buffer as well but not used in this shader, so I just keep it in here as a comment
+	
+	float c_epsilon : packoffset(c0.z);	// julia detail  	
 	int c_selfShadow : packoffset(c0.w);  // selfshadowing on or off  
 	float4 c_diffuse : packoffset(c1);	// diffuse shading color
 	float4 c_mu : packoffset(c2);		// julia quaternion parameter
@@ -34,8 +37,11 @@ cbuffer cbCS : register(b0)
 	float3 Contrast : packoffset(c9);
 };
 
-#define groupthreads THREADX * THREADY
-groupshared float4 sharedMem[groupthreads];
+//
+// the following shader stores 256 values in thread group shared memory by copying them from structured buffer
+// it applies then color filter operations and copies the data then into RWTexture2D
+//
+groupshared float3 sharedMem[THREADX * THREADY];
 
 // SV_DispatchThreadID - index of the thread within the entire dispatch in each dimension: x - 0..x - 1; y - 0..y - 1; z - 0..z - 1
 // SV_GroupID - index of a thread group in the dispatch — for example, calling Dispatch(2,1,1) results in possible values of 0,0,0 and 1,0,0, varying from 0 to (numthreadsX * numthreadsY * numThreadsZ) – 1
@@ -44,29 +50,20 @@ groupshared float4 sharedMem[groupthreads];
 [numthreads(THREADX, THREADY, 1)]
 void PostFX( uint3 Gid : SV_GroupID, uint3 DTid : SV_DispatchThreadID, uint3 GTid : SV_GroupThreadID, uint GI : SV_GroupIndex  )
 {
-	uint2 size = uint2(c_width, c_height);
-
     // copy the number of values == groupthreads into the shared memory
-	uint idx = DTid.x + DTid.y * size.x;
-        
-    float3 color = 0;
-    
-    // make sure we are not running out of bounds
-	if (idx < (size.x * size.y - 1))
-    {
-		color = Input[idx].xyz;
+	uint idx = DTid.x + DTid.y * c_width;
+	sharedMem[GI] = Input[idx];
 		
-		// Contrast
-		color = color - Contrast * (color - 1.0f) * color * (color - 0.5f);
+	// Contrast
+	sharedMem[GI] = sharedMem[GI] - Contrast * (sharedMem[GI] - 1.0f) * sharedMem[GI] * (sharedMem[GI] - 0.5f);
 
-		// Saturation
-		float Lum = dot(color, float3(0.2126, 0.7152, 0.0722));
-		color = lerp(Lum.xxx, color, Saturation);
+	// Saturation
+	float Lum = dot(sharedMem[GI], float3(0.2126, 0.7152, 0.0722));
+	sharedMem[GI] = lerp(Lum.xxx, sharedMem[GI].xyz, Saturation);
 	
-		// Color Correction
-		color = color * float3(ColorCorrectRed, ColorCorrectGreen, ColorCorrectBlue)  * float3(2.0f, 2.0f, 2.0f) + float3(ColorAddRed, ColorAddGreen, ColorAddBlue);
-		
-	}
+	// Color Correction
+	sharedMem[GI] = sharedMem[GI] * float3(ColorCorrectRed, ColorCorrectGreen, ColorCorrectBlue)  * float3(2.0f, 2.0f, 2.0f) + float3(ColorAddRed, ColorAddGreen, ColorAddBlue);
 
-    Result[DTid.xy] = float4(color, 0.0); 
+	// write out into the RWTexture2D == backbuffer
+	Result[DTid.xy] = float4(sharedMem[GI], 1.0);
 }

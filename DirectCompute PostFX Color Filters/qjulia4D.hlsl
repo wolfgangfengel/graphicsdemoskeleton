@@ -1,3 +1,12 @@
+////////////////////////////////////////////////////////////////////////
+//
+// Port of Jan Vlietnick's Julia 4D demo 
+//
+// by Wolfgang Engel 
+//
+// Last time modified: 12/31/2013 
+//
+///////////////////////////////////////////////////////////////////////
 
 // Coded by Jan Vlietinck, 11 Oct 2009, V 1.4
 // http://users.skynet.be/fquake/
@@ -6,18 +15,11 @@
 // The original Cg code from Keenan Crane is slightly adapted, like intersectQJulia() which would otherwise hang in HLSL
 // also the diffuse color is now continuously changed
 
-
 #define ITERATIONS                  10
 
+RWStructuredBuffer<float4> output : register (u0); // UAV 0
 
-struct BufferStruct
-{
-	float4 color;
-};
-RWStructuredBuffer<BufferStruct> output : register (u0); // UAV 0
-
-// constants that can change the rendering per frame
-
+// constants that can change per frame
 cbuffer cbCS : register( b0 )
 { 
 	int c_height : packoffset(c0.x);
@@ -100,10 +102,6 @@ float4 quatSq( float4 q )
 
    return r;
 }
-
-
-
-
 
 // ----------- normEstimate() -------------------------------------------------------
 //
@@ -382,7 +380,7 @@ void CS_QJulia4D( uint3 Gid : SV_GroupID, uint3 DTid : SV_DispatchThreadID, uint
 { 
     float4 coord = float4((float)DTid.x, (float)DTid.y, 0.0f, 0.0f);
 
-    float2 size     = float2((float)c_width, (float)c_height);
+    float2 size     = float2(c_width, c_height);
     float scale     = min(size.x, size.y);
     float2 half     = float2(0.5f, 0.5f);
     float2 position = (coord.xy - half * size) / scale * BOUNDING_RADIUS_2 * zoom; 
@@ -390,26 +388,20 @@ void CS_QJulia4D( uint3 Gid : SV_GroupID, uint3 DTid : SV_DispatchThreadID, uint
     float3 light = float3(1.5f, 0.5f, 4.0f);
     float3 eye   = float3(0.0f, 0.0f, 4.0f);
     float3 ray   = float3(position.x, position.y, 0.0f);
-    
-
+   
     // rotate fractal
     light = mul(float4(light, 0.0), rotation).xyz;
     eye   = mul(float4(eye, 0.0), rotation).xyz;
     ray   = mul(float4(ray, 0.0), rotation).xyz;
-    
-
-
+ 
     // ray start and ray direction
     float3 rO =  eye;
     float3 rD =  ray - rO;
-
     
     float4 color = QJulia(rO, rD, c_mu, c_epsilon, eye, light, c_selfShadow);
-    
-	uint stride = c_width;  
 
 	// buffer stride, assumes data stride = data width (i.e. no padding)
-	uint idx = DTid.x + DTid.y * stride;
-	output[idx].color = color;  
+	uint idx = DTid.x + DTid.y * c_width;
+	output[idx] = color;  
 }
 

@@ -4,7 +4,7 @@
 //
 // by Wolfgang Engel 
 //
-// Last time modified: 11/07/2013 
+// Last time modified: 12/31/2013
 //
 ///////////////////////////////////////////////////////////////////////
 #define WIN32_LEAN_AND_MEAN
@@ -23,8 +23,8 @@ DEFINE_GUIDW(IID_ID3D11Texture2D,0x6f15aaf2,0xd208,0x4e89,0x9a,0xb4,0x48,0x95,0x
 // define the size of the window
 #define THREADSX 16			// number of threads in the thread group used in the compute shader
 #define THREADSY 16			// number of threads in the thread group used in the compute shader
-#define WINDOWWIDTH 800 
-#define WINDOWHEIGHT 600
+#define WINDOWWIDTH 1280 
+#define WINDOWHEIGHT 720
 
 #define WINWIDTH ((((WINDOWWIDTH + THREADSX - 1) / THREADSX) * THREADSX))	// multiply of ThreadsX 
 #define WINHEIGHT ((((WINDOWHEIGHT + THREADSY - 1) / THREADSY) * THREADSY)) // multiply of ThreadsY
@@ -173,17 +173,14 @@ __declspec( naked )  void __cdecl winmain()
 	IDXGISwapChain *pSwapChain;
 	ID3D11DeviceContext *pImmediateContext;
 
-	static ID3D11Buffer*		    	pcbFractal = NULL;      // constant buffer
-	static ID3D11Buffer*		    	pConstantFilterData = NULL; // constant buffer for color filters
-
-	ID3D11UnorderedAccessView*  pComputeOutput = NULL;  // output into back buffer
-
-	ID3D11UnorderedAccessView*  pComputeOutputUAV = NULL;  // output into structured buffer
-	ID3D11ShaderResourceView*	pComputeShaderSRV = NULL;
-
+	ID3D11Buffer*		    	pcbFractal;      // constant buffer
+	ID3D11UnorderedAccessView*  pComputeOutput;  // output into back buffer
+	ID3D11UnorderedAccessView*  pComputeOutputUAV;  // output into structured buffer
+	ID3D11ShaderResourceView*	pComputeShaderSRV;
 	ID3D11Buffer*				pStructuredBuffer;
 
 	static D3D11_BUFFER_DESC sbDesc;
+	static D3D11_UNORDERED_ACCESS_VIEW_DESC sbUAVDesc;
 	static D3D11_SHADER_RESOURCE_VIEW_DESC sbSRVDesc;
 	static D3D11_BUFFER_DESC Desc;
 
@@ -205,10 +202,10 @@ __declspec( naked )  void __cdecl winmain()
 
 	// timer global variables
 	DWORD		StartTime;
-	DWORD		CurrentTime;
+	static DWORD		CurrentTime;
 
 	// keep track if the game loop is still running
-	BOOL		BRunning;
+	static BOOL BStopRunning;
 
 	// the most simple window
 	HWND hWnd = CreateWindow(L"edit", 0, WS_POPUP | WS_VISIBLE, WINPOSX, WINPOSY, WINWIDTH, WINHEIGHT, 0, 0, 0, 0);
@@ -264,7 +261,7 @@ __declspec( naked )  void __cdecl winmain()
 		float ColorCorrect[3];
 		float ColorAdd[3];
 		float Contrast[3];
-	} QJulia4DConstants;
+	} MainConstantBuffer;
 
 #if defined(_DEBUG)
 	HRESULT hr; // track a few return statements
@@ -274,8 +271,7 @@ __declspec( naked )  void __cdecl winmain()
     Desc.Usage = D3D11_USAGE_DYNAMIC;
     Desc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
     Desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-    Desc.MiscFlags = 0;
-    Desc.ByteWidth = ((sizeof( QJulia4DConstants ) + 15) / 16) * 16; // must be multiple of 16 bytes
+	Desc.ByteWidth = ((sizeof(MainConstantBuffer)+15) / 16) * 16; // must be multiple of 16 bytes
 #if defined(_DEBUG)
 	hr =
 #endif
@@ -295,19 +291,13 @@ __declspec( naked )  void __cdecl winmain()
 	} BufferStruct;
 
 	sbDesc.BindFlags = D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE;
-	sbDesc.CPUAccessFlags = 0;
 	sbDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
 	sbDesc.StructureByteStride = sizeof(BufferStruct);
-
 	sbDesc.ByteWidth = sbDesc.StructureByteStride * WINWIDTH * WINHEIGHT + 1280;
 	sbDesc.Usage = D3D11_USAGE_DEFAULT;
 	pd3dDevice->lpVtbl->CreateBuffer(pd3dDevice, &sbDesc, NULL, &pStructuredBuffer);
-
-
+	
 	// UAV
-	static D3D11_UNORDERED_ACCESS_VIEW_DESC sbUAVDesc;
-	sbUAVDesc.Buffer.FirstElement = 0;
-	sbUAVDesc.Buffer.Flags = 0;
 	sbUAVDesc.Buffer.NumElements = sbDesc.ByteWidth / sbDesc.StructureByteStride;
 	sbUAVDesc.Format = DXGI_FORMAT_UNKNOWN;
 	sbUAVDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
@@ -321,9 +311,7 @@ __declspec( naked )  void __cdecl winmain()
 		MessageBoxA(NULL, "UAV creation failed", "Error", MB_OK | MB_ICONERROR);
 #endif
 
-
 	// SRV on structured buffer
-	sbSRVDesc.Buffer.ElementOffset = 0;
 	sbSRVDesc.Buffer.ElementWidth = sbDesc.StructureByteStride;
 	sbSRVDesc.Buffer.FirstElement = sbUAVDesc.Buffer.FirstElement;
 	sbSRVDesc.Buffer.NumElements = sbUAVDesc.Buffer.NumElements;
@@ -338,17 +326,15 @@ __declspec( naked )  void __cdecl winmain()
 	if (hr != S_OK)
 		MessageBoxA(NULL, "SRV creation failed", "Error", MB_OK | MB_ICONERROR);
 #endif
-
-
+	
 	// create shader unordered access view on back buffer for compute shader to write into texture
 	pd3dDevice->lpVtbl->CreateUnorderedAccessView(pd3dDevice, (ID3D11Resource*)pTexture, NULL, &pComputeOutput);
-
 
 	//
 	// compile the compute shaders
 	//
-	ID3D11ComputeShader *pCompiledComputeShader = NULL;
-	ID3D11ComputeShader *pCompiledPostFXComputeShader = NULL;
+	ID3D11ComputeShader *pCompiledComputeShader;
+	ID3D11ComputeShader *pCompiledPostFXComputeShader;
 
 #if defined(_DEBUG)
 	hr =
@@ -366,16 +352,14 @@ __declspec( naked )  void __cdecl winmain()
 
 	// setup timer 
 	StartTime = GetTickCount();
-	CurrentTime = 0;	
 
 	// seed the random number generator
 	SetSeed((unsigned int)GetCurrentTime());
 
 	// set the game loop to running by default
-	BRunning = TRUE;
 	MSG msg;
 
-	while (BRunning)
+	while (!BStopRunning)
 	{
 #if defined(WELLBEHAVIOUR)
 		// Just remove the message
@@ -390,7 +374,7 @@ __declspec( naked )  void __cdecl winmain()
 			|| GetAsyncKeyState(VK_ESCAPE)
 #endif
 			)
-			BRunning = FALSE;
+			BStopRunning = TRUE;
 
 		dt = CurrentTime / (1000.0f * 20.0f);
 
@@ -404,58 +388,58 @@ __declspec( naked )  void __cdecl winmain()
 		static D3D11_MAPPED_SUBRESOURCE msr;
   		pImmediateContext->lpVtbl->Map(pImmediateContext,(ID3D11Resource *)pcbFractal, 0, D3D11_MAP_WRITE_DISCARD, 0,  &msr);
 
-    	static QJulia4DConstants mc;
+		static MainConstantBuffer* mc;
+		mc = msr.pData;
 
 		// this is a continous constant buffer
 		// that means each value is aligned in the buffer one after each other without any states
 		// this needs to be in the same order as the constant buffer struct in the shader
-    	mc.c_height = WINHEIGHT;
-		mc.c_width = WINWIDTH;
-		mc.epsilon = Epsilon;
-		mc.selfShadow = selfShadow;
-		mc.diffuse[0] = ColorC[0];
-    	mc.diffuse[1] = ColorC[1];
-    	mc.diffuse[2] = ColorC[2];
-    	mc.diffuse[3] = ColorC[3];
-    	mc.mu[0] = MuC[0];
-    	mc.mu[1] = MuC[1];
-    	mc.mu[2] = MuC[2];
-    	mc.mu[3] = MuC[3];
-		mc.orientation[0] = 1.0;
-		mc.orientation[1] = 0.0;
-		mc.orientation[2] = 0.0;
-		mc.orientation[3] = 0.0;
-		mc.orientation[4] = 0.0;
-		mc.orientation[5] = 1.0;
-		mc.orientation[6] = 0.0;
-		mc.orientation[7] = 0.0;
-		mc.orientation[8] = 0.0;
-		mc.orientation[9] = 0.0;
-		mc.orientation[10] = 1.0;
-		mc.orientation[11] = 0.0;
-		mc.orientation[12] = 0.0;
-		mc.orientation[13] = 0.0;
-		mc.orientation[14] = 0.0;
-		mc.orientation[15] = 1.0;
-    	mc.zoom = zoom;
-		mc.Saturation =  (gSaturation < 0.0f) ? 0.0f : (gSaturation > 1.0f) ? 1.0f : gSaturation;
-		mc.ColorCorrect[0] = 0.5f;
-		mc.ColorCorrect[1] = 0.5f;
-		mc.ColorCorrect[2] = 0.5f;
-		mc.ColorAdd[0] = 0.0f;
-		mc.ColorAdd[1] = 0.0f;
-		mc.ColorAdd[2] = 0.0f;
-		mc.Contrast[0] = 0.0f;
-		mc.Contrast[1] = 0.0f;
-		mc.Contrast[2] = 0.0f;
+    	mc->c_height = WINHEIGHT;
+		mc->c_width = WINWIDTH;
+		mc->epsilon = Epsilon;
+		mc->selfShadow = selfShadow;
+		mc->diffuse[0] = ColorC[0];
+    	mc->diffuse[1] = ColorC[1];
+    	mc->diffuse[2] = ColorC[2];
+    	mc->diffuse[3] = ColorC[3];
+    	mc->mu[0] = MuC[0];
+    	mc->mu[1] = MuC[1];
+    	mc->mu[2] = MuC[2];
+    	mc->mu[3] = MuC[3];
+		mc->orientation[0] = 1.0;
+//		mc->orientation[1] = 0.0;
+//		mc->orientation[2] = 0.0;
+//		mc->orientation[3] = 0.0;
+//		mc->orientation[4] = 0.0;
+		mc->orientation[5] = 1.0;
+//		mc->orientation[6] = 0.0;
+//		mc->orientation[7] = 0.0;
+//		mc->orientation[8] = 0.0;
+//		mc->orientation[9] = 0.0;
+		mc->orientation[10] = 1.0;
+//		mc->orientation[11] = 0.0;
+//		mc->orientation[12] = 0.0;
+//		mc->orientation[13] = 0.0;
+//		mc->orientation[14] = 0.0;
+		mc->orientation[15] = 1.0;
+    	mc->zoom = zoom;
+		mc->Saturation =  (gSaturation < 0.0f) ? 0.0f : (gSaturation > 1.0f) ? 1.0f : gSaturation;
+		mc->ColorCorrect[0] = 0.5f;
+		mc->ColorCorrect[1] = 0.5f;
+		mc->ColorCorrect[2] = 0.5f;
+//		mc->ColorAdd[0] = 0.0f;
+//		mc->ColorAdd[1] = 0.0f;
+//		mc->ColorAdd[2] = 0.0f;
+//		mc->Contrast[0] = 0.0f;
+//		mc->Contrast[1] = 0.0f;
+//		mc->Contrast[2] = 0.0f;
 
-		*(QJulia4DConstants *)msr.pData = mc;
   		pImmediateContext->lpVtbl->Unmap(pImmediateContext, (ID3D11Resource *)pcbFractal,0);
+
 
 		//
 		// run the Julia 4D code
 		//
-
     	// Set compute shader
     	pImmediateContext->lpVtbl->CSSetShader(pImmediateContext, pCompiledComputeShader, NULL, 0 );
 
@@ -472,7 +456,6 @@ __declspec( naked )  void __cdecl winmain()
 		//
 		// run PostFX
 		//
-
 		// Set compute shader
 		pImmediateContext->lpVtbl->CSSetShader(pImmediateContext, pCompiledPostFXComputeShader, NULL, 0);
 
