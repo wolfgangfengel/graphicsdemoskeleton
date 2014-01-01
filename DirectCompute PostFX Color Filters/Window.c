@@ -461,6 +461,10 @@ __declspec( naked )  void __cdecl winmain()
     	// Run the CS
 		pImmediateContext->lpVtbl->Dispatch(pImmediateContext, WINWIDTH / THREADSX, WINHEIGHT / THREADSY, 1);
 
+		//
+		// run PostFX
+		//
+
 		// Set compute shader
 		pImmediateContext->lpVtbl->CSSetShader(pImmediateContext, pCompiledPostFXComputeShader, NULL, 0);
 
