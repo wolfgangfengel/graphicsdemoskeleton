@@ -201,8 +201,8 @@ __declspec( naked )  void __cdecl winmain()
 	float zoom = 1.0f;
 
 	// timer global variables
-	DWORD		StartTime;
-	static DWORD		CurrentTime;
+	DWORD StartTime;
+	static DWORD CurrentTime;
 
 	// keep track if the game loop is still running
 	static BOOL BStopRunning;
@@ -394,8 +394,8 @@ __declspec( naked )  void __cdecl winmain()
 		mc = msr.pData;
 
 		// this is a continous constant buffer
-		// that means each value is aligned in the buffer one after each other without any states
-		// this needs to be in the same order as the constant buffer struct in the shader
+		// that means each value is aligned in the buffer one after each other without any spaces
+		// the layout need to be in the same order as the constant buffer struct in the shader
     	mc->c_height = WINHEIGHT;
 		mc->c_width = WINWIDTH;
 		mc->epsilon = Epsilon;

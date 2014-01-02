@@ -18,7 +18,7 @@ cbuffer cbCS : register(b0)
 	uint c_height : packoffset(c0.x);
 	uint c_width : packoffset(c0.y);		// size view port
 /*	
-	This is in the constant buffer as well but not used in this shader, so I just keep it in here as a comment
+	This is the part of the constant buffer not used in this shader, so I just keep it in here as a comment
 	
 	float c_epsilon : packoffset(c0.z);	// julia detail  	
 	int c_selfShadow : packoffset(c0.w);  // selfshadowing on or off  
@@ -39,7 +39,7 @@ cbuffer cbCS : register(b0)
 
 //
 // the following shader stores 256 values in thread group shared memory by copying them from structured buffer
-// it applies then color filter operations and copies the data then into RWTexture2D
+// it applies then color filter operations and copies the data then into a RWTexture2D
 //
 groupshared float3 sharedMem[THREADX * THREADY];
 
@@ -68,7 +68,7 @@ void PostFX( uint3 Gid : SV_GroupID, uint3 DTid : SV_DispatchThreadID, uint3 GTi
 
 	// make sure we are not running out of bounds
 	// also no memory barrier inside an if statement 
-	// -> everything in if statement is only reading thread group shared memory or register based
+	// -> everything in if statement is only reading thread group shared memory or is in register based memory
 	if (idx < (c_width * c_height - 1))
 	{
 		// load from thread group shared memory to register based memory

@@ -366,17 +366,11 @@ float4 QJulia(float3 rO,					// ray origin
 }
 
 [numthreads(16, 16, 1)]
-// SV_DispatchThreadID - index of the thread within the entire dispatch in each dimension x - 0..799; y - 0..639
-//
-// SV_GroupIndex - index in a thread group: varies from 0 to (numthreadsX * numthreadsY * numThreadsZ) – 1
-//
-// SV_GroupID - index of a thread group in the dispatch. For example calling Dispatch(2,1,1) results in possible values of 0,0,0 and 1,0,0.
-//
-// SV_GroupThreadID - index of a thread in a thread group, in each dimension.
-// For example if numthreads(3,2,1) was specified possible values for 
-// the SV_GroupThreadID input value have this range of values (0-2,0-1,0).
-void CS_QJulia4D( uint3 Gid : SV_GroupID, uint3 DTid : SV_DispatchThreadID, uint3 GTid : SV_GroupThreadID, uint GI : SV_GroupIndex )
-//****************************************************************************
+// SV_DispatchThreadID - index of the thread within the entire dispatch in each dimension: x - 0..x - 1; y - 0..y - 1; z - 0..z - 1
+// SV_GroupID - index of a thread group in the dispatch — for example, calling Dispatch(2,1,1) results in possible values of 0,0,0 and 1,0,0, varying from 0 to (numthreadsX * numthreadsY * numThreadsZ) – 1
+// SV_GroupThreadID - 3D version of SV_GroupIndex - if you specified numthreads(3,2,1), possible values for the SV_GroupThreadID input value have the range of values (0–2,0–1,0)
+// SV_GroupIndex - index of a thread within a thread group
+void CS_QJulia4D(uint3 Gid : SV_GroupID, uint3 DTid : SV_DispatchThreadID, uint3 GTid : SV_GroupThreadID, uint GI : SV_GroupIndex)
 { 
     float4 coord = float4((float)DTid.x, (float)DTid.y, 0.0f, 0.0f);
 
