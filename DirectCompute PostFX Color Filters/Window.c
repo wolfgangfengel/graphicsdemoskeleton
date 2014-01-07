@@ -474,7 +474,11 @@ __declspec( naked )  void __cdecl winmain()
 		// Run the CS
 		pImmediateContext->lpVtbl->Dispatch(pImmediateContext, WINWIDTH / THREADSX, WINHEIGHT / THREADSY, 1);
 
-
+#if defined(_DEBUG)
+		// set back the shader resource view to zero
+		ID3D11ShaderResourceView* pNull = NULL;
+		pImmediateContext->lpVtbl->CSSetShaderResources(pImmediateContext, 0, 1, &pNull);
+#endif
 
 		// make it visible
 		pSwapChain->lpVtbl->Present(pSwapChain, 0, 0);
