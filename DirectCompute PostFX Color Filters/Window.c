@@ -234,10 +234,6 @@ __declspec( naked )  void __cdecl winmain()
 			&pd3dDevice,
 			NULL,
 			&pImmediateContext);
-
-
-  	DXGI_SWAP_CHAIN_DESC sdtemp;
-  	pSwapChain->lpVtbl->GetDesc(pSwapChain, &sdtemp);
 	
 	// get access to the back buffer via a texture
   	ID3D11Texture2D* pTexture;
@@ -287,15 +283,10 @@ __declspec( naked )  void __cdecl winmain()
 	// 
 	// structured buffer + shader resource view and unordered access view
 	//
-	typedef struct
-	{
-		float color[4];
-	} BufferStruct;
-
 	sbDesc.BindFlags = D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE;
 	sbDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
-	sbDesc.StructureByteStride = sizeof(BufferStruct);
-	sbDesc.ByteWidth = sbDesc.StructureByteStride * WINWIDTH * WINHEIGHT + 1280;
+	sbDesc.StructureByteStride = sizeof(float) * 4;
+	sbDesc.ByteWidth = sbDesc.StructureByteStride * WINWIDTH * WINHEIGHT; // size of window
 	sbDesc.Usage = D3D11_USAGE_DEFAULT;
 	pd3dDevice->lpVtbl->CreateBuffer(pd3dDevice, &sbDesc, NULL, &pStructuredBuffer);
 	
@@ -426,7 +417,7 @@ __declspec( naked )  void __cdecl winmain()
 		mc->orientation[15] = 1.0;
     	mc->zoom = zoom;
 		mc->Saturation =  (gSaturation < 0.0f) ? 0.0f : (gSaturation > 1.0f) ? 1.0f : gSaturation;
-		mc->ColorCorrect[0] = 0.5f;
+		mc->ColorCorrect[0] = 1.5f;
 		mc->ColorCorrect[1] = 0.5f;
 		mc->ColorCorrect[2] = 0.5f;
 //		mc->ColorAdd[0] = 0.0f;
