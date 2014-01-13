@@ -37,7 +37,7 @@ DEFINE_GUIDW(IID_ID3D11Texture2D,0x6f15aaf2,0xd208,0x4e89,0x9a,0xb4,0x48,0x95,0x
 #define WELLBEHAVIOUR
 
 #include "qjulia4D.sh"
-#include "ColorFilters.sh"
+#include "ParallelReduction.sh"
 
 //
 // Random number generator

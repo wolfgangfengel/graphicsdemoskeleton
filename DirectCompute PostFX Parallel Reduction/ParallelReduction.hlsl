@@ -7,6 +7,9 @@
 // Last time modified: 12/31/2013
 //
 ///////////////////////////////////////////////////////////////////////
+
+#define OPTIMIZATION 3
+
 StructuredBuffer<float4> Input : register( t0 );
 RWTexture2D<float4> Result : register (u0);
 
@@ -38,8 +41,7 @@ cbuffer cbCS : register(b0)
 };
 
 //
-// the following shader stores 256 values in thread group shared memory by copying them from structured buffer
-// it applies then color filter operations and copies the data then into RWTexture2D
+// the following shader applies parallel reduction to an image and converts it to luminance
 //
 #define groupthreads THREADX * THREADY
 groupshared float4 sharedMem[groupthreads];
@@ -65,15 +67,36 @@ void PostFX( uint3 Gid : SV_GroupID, uint3 DTid : SV_DispatchThreadID, uint3 GTi
 	// Parallel reduction
 	[unroll(groupthreads)]
 
+#if OPTIMIZATION == 1
 	// 
-	for (uint s = groupthreads / 2; s > 0; s >>= 1)
+	for (uint s = 1; s < groupthreads; s *= 2)
 	{
-		if (GI < s)
+		if (GI % (2 * s) == 0)
 			sharedMem[GI] += sharedMem[GI + s];
 
 		GroupMemoryBarrierWithGroupSync();
 	}
+#elif OPTIMIZATION == 2
 
+	for (uint s = 1; s < groupthreads; s *= 2)
+	{
+		int index = 2 * s * GI;
+
+		if (index < groupthreads)
+			sharedMem[index] += sharedMem[index + s];
+
+		GroupMemoryBarrierWithGroupSync();
+	}
+#elif OPTIMIZATION == 3
+
+for (uint s = groupthreads / 2; s > 0; s >>= 1)
+{
+	if (GI < s)
+		sharedMem[GI] += sharedMem[GI + s];
+
+	GroupMemoryBarrierWithGroupSync();
+}
+#endif
 	/*
 	// Parallel reduction algorithm follows
 	// add up 64..127 to 0..63
