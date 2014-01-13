@@ -1,10 +1,10 @@
 ////////////////////////////////////////////////////////////////////////
 //
-// Instructional Post-Processing Color filters with DirectCompute
+// Instructional Post-Processing Parallel Reduction with DirectCompute
 //
 // by Wolfgang Engel 
 //
-// Last time modified: 12/31/2013
+// Last time modified: 01/13/2014
 //
 ///////////////////////////////////////////////////////////////////////
 
@@ -35,14 +35,6 @@ cbuffer cbCS : register(b0)
 	float4x4 rotation : packoffset(c3);
 	float zoom : packoffset(c7.x);
 */
-	float Saturation : packoffset(c7.y);
-	float ColorCorrectRed : packoffset(c7.z);
-	float ColorCorrectGreen : packoffset(c7.w);
-	float ColorCorrectBlue : packoffset(c8.x);
-	float ColorAddRed : packoffset(c8.y);
-	float ColorAddGreen : packoffset(c8.z);
-	float ColorAddBlue : packoffset(c8.w);
-	float3 Contrast : packoffset(c9);
 };
 
 //
@@ -71,10 +63,10 @@ void PostFX( uint3 Gid : SV_GroupID, uint3 DTid : SV_DispatchThreadID, uint3 GTi
 	sharedMem[GI] = dot(Input[idx], LumVector);
 #endif
 
-	// Parallel reduction algorithm follows 
+	// wait until everything is transfered from device memory to shared memory
 	GroupMemoryBarrierWithGroupSync();
 
-	// Parallel reduction
+	// 
 	[unroll(groupthreads)]
 
 #if OPTIMIZATION == 1
@@ -87,7 +79,6 @@ void PostFX( uint3 Gid : SV_GroupID, uint3 DTid : SV_DispatchThreadID, uint3 GTi
 		GroupMemoryBarrierWithGroupSync();
 	}
 #elif OPTIMIZATION == 2
-
 	for (uint s = 1; s < groupthreads; s *= 2)
 	{
 		int index = 2 * s * GI;
@@ -98,16 +89,14 @@ void PostFX( uint3 Gid : SV_GroupID, uint3 DTid : SV_DispatchThreadID, uint3 GTi
 		GroupMemoryBarrierWithGroupSync();
 	}
 #elif OPTIMIZATION == 3 || 4
+	for (uint s = groupthreads / 2; s > 0; s >>= 1)
+	{
+		if (GI < s)
+			sharedMem[GI] += sharedMem[GI + s];
 
-for (uint s = groupthreads / 2; s > 0; s >>= 1)
-{
-	if (GI < s)
-		sharedMem[GI] += sharedMem[GI + s];
-
-	GroupMemoryBarrierWithGroupSync();
-}
+		GroupMemoryBarrierWithGroupSync();
+	}
 #elif OPTIMIZATION == 5
-	
 	for (uint s = groupthreads / 2; s > 32; s >>= 1)
 	{
 		// store in shared memory    
@@ -122,7 +111,6 @@ for (uint s = groupthreads / 2; s > 0; s >>= 1)
 		sharedMem[GI] += sharedMem[GI + 2];
 		sharedMem[GI] += sharedMem[GI + 1];
 	}
-
 #endif
 	/*
 	// Parallel reduction algorithm follows

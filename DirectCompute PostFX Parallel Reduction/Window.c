@@ -257,12 +257,6 @@ __declspec( naked )  void __cdecl winmain()
 		float mu[4];    // quaternion julia parameter
 		float orientation[4*4]; // rotation matrix
 		float zoom;
-
-		// PostFX constants
-		float Saturation;
-		float ColorCorrect[3];
-		float ColorAdd[3];
-		float Contrast[3];
 	} MainConstantBuffer;
 
 #if defined(_DEBUG)
@@ -425,16 +419,6 @@ __declspec( naked )  void __cdecl winmain()
 //		mc->orientation[14] = 0.0;
 		mc->orientation[15] = 1.0;
     	mc->zoom = zoom;
-		mc->Saturation =  (gSaturation < 0.0f) ? 0.0f : (gSaturation > 1.0f) ? 1.0f : gSaturation;
-		mc->ColorCorrect[0] = 0.5f;
-		mc->ColorCorrect[1] = 0.5f;
-		mc->ColorCorrect[2] = 0.5f;
-//		mc->ColorAdd[0] = 0.0f;
-//		mc->ColorAdd[1] = 0.0f;
-//		mc->ColorAdd[2] = 0.0f;
-//		mc->Contrast[0] = 0.0f;
-//		mc->Contrast[1] = 0.0f;
-//		mc->Contrast[2] = 0.0f;
 
   		pImmediateContext->lpVtbl->Unmap(pImmediateContext, (ID3D11Resource *)pcbFractal,0);
 
@@ -474,7 +458,7 @@ __declspec( naked )  void __cdecl winmain()
 		// Run the CS
 		pImmediateContext->lpVtbl->Dispatch(pImmediateContext, WINWIDTH / THREADSX, WINHEIGHT / THREADSY, 1);
 
-#if defined(_DEBUG)
+#if defined(WELLBEHAVIOUR)
 		// set back the shader resource view to zero
 		ID3D11ShaderResourceView* pNull = NULL;
 		pImmediateContext->lpVtbl->CSSetShaderResources(pImmediateContext, 0, 1, &pNull);
