@@ -8,13 +8,18 @@
 //
 ///////////////////////////////////////////////////////////////////////
 
-#define OPTIMIZATION 3
+#define OPTIMIZATION 5
 
 StructuredBuffer<float4> Input : register( t0 );
 RWTexture2D<float4> Result : register (u0);
 
+#if OPTIMIZATION == 4 || 5
+#define THREADX 16 / 2
+#define THREADY 16 / 2
+#else
 #define THREADX 16
 #define THREADY 16
+#endif
 
 cbuffer cbCS : register(b0)
 {
@@ -58,8 +63,13 @@ void PostFX( uint3 Gid : SV_GroupID, uint3 DTid : SV_DispatchThreadID, uint3 GTi
 	// read from structured buffer
 	uint idx = DTid.x + DTid.y * c_width;
 
+#if OPTIMIZATION == 4 || 5
+	// store in shared memory    
+	sharedMem[GI] = dot(Input[idx * 2], LumVector) + dot(Input[idx * 2 + 1], LumVector);
+#else
 	// store in shared memory    
 	sharedMem[GI] = dot(Input[idx], LumVector);
+#endif
 
 	// Parallel reduction algorithm follows 
 	GroupMemoryBarrierWithGroupSync();
@@ -87,7 +97,7 @@ void PostFX( uint3 Gid : SV_GroupID, uint3 DTid : SV_DispatchThreadID, uint3 GTi
 
 		GroupMemoryBarrierWithGroupSync();
 	}
-#elif OPTIMIZATION == 3
+#elif OPTIMIZATION == 3 || 4
 
 for (uint s = groupthreads / 2; s > 0; s >>= 1)
 {
@@ -96,6 +106,23 @@ for (uint s = groupthreads / 2; s > 0; s >>= 1)
 
 	GroupMemoryBarrierWithGroupSync();
 }
+#elif OPTIMIZATION == 5
+	
+	for (uint s = groupthreads / 2; s > 32; s >>= 1)
+	{
+		// store in shared memory    
+		sharedMem[GI] += sharedMem[GI + s];
+	}
+
+	if (GI < 32)
+	{
+		sharedMem[GI] += sharedMem[GI + 32];
+		sharedMem[GI] += sharedMem[GI + 16];
+		sharedMem[GI] += sharedMem[GI + 8];
+		sharedMem[GI] += sharedMem[GI + 2];
+		sharedMem[GI] += sharedMem[GI + 1];
+	}
+
 #endif
 	/*
 	// Parallel reduction algorithm follows
