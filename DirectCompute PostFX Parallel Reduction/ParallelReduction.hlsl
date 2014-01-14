@@ -8,12 +8,21 @@
 //
 ///////////////////////////////////////////////////////////////////////
 
+/*
+#0 is base line
+#1 Interleaved Shared Memory Addressing : Divergent Branching
+#2 Interleaved Shared Memory Addressing : Shared Memory Bank Conflicts
+#3 Idle Threads in Thread Group : First add during Global Load
+#4 Instruction Bottleneck : Unroll last Warp
+#5 Completely Unroll
+#6 Multiple Elements per Thread
+*/
 #define OPTIMIZATION 5
 
 StructuredBuffer<float4> Input : register( t0 );
 RWTexture2D<float4> Result : register (u0);
 
-#if OPTIMIZATION == 4 || 5
+#if OPTIMIZATION == 3 || 4 || 5
 #define THREADX 16 / 2
 #define THREADY 16 / 2
 #else
@@ -55,7 +64,7 @@ void PostFX( uint3 Gid : SV_GroupID, uint3 DTid : SV_DispatchThreadID, uint3 GTi
 	// read from structured buffer
 	uint idx = DTid.x + DTid.y * c_width;
 
-#if OPTIMIZATION == 4 || 5
+#if OPTIMIZATION == 3 || 4 || 5
 	// store in shared memory    
 	sharedMem[GI] = dot(Input[idx * 2], LumVector) + dot(Input[idx * 2 + 1], LumVector);
 #else
@@ -69,7 +78,7 @@ void PostFX( uint3 Gid : SV_GroupID, uint3 DTid : SV_DispatchThreadID, uint3 GTi
 	// 
 	[unroll(groupthreads)]
 
-#if OPTIMIZATION == 1
+#if OPTIMIZATION == 0
 	// 
 	for (uint s = 1; s < groupthreads; s *= 2)
 	{
@@ -78,7 +87,7 @@ void PostFX( uint3 Gid : SV_GroupID, uint3 DTid : SV_DispatchThreadID, uint3 GTi
 
 		GroupMemoryBarrierWithGroupSync();
 	}
-#elif OPTIMIZATION == 2
+#elif OPTIMIZATION == 1
 	for (uint s = 1; s < groupthreads; s *= 2)
 	{
 		int index = 2 * s * GI;
@@ -88,7 +97,7 @@ void PostFX( uint3 Gid : SV_GroupID, uint3 DTid : SV_DispatchThreadID, uint3 GTi
 
 		GroupMemoryBarrierWithGroupSync();
 	}
-#elif OPTIMIZATION == 3 || 4
+#elif OPTIMIZATION == 2 || 3
 	for (uint s = groupthreads / 2; s > 0; s >>= 1)
 	{
 		if (GI < s)
@@ -96,11 +105,13 @@ void PostFX( uint3 Gid : SV_GroupID, uint3 DTid : SV_DispatchThreadID, uint3 GTi
 
 		GroupMemoryBarrierWithGroupSync();
 	}
-#elif OPTIMIZATION == 5
+#elif OPTIMIZATION == 4
 	for (uint s = groupthreads / 2; s > 32; s >>= 1)
 	{
-		// store in shared memory    
-		sharedMem[GI] += sharedMem[GI + s];
+		if (GI < s)
+		 // store in shared memory    
+		 sharedMem[GI] += sharedMem[GI + s];
+		GroupMemoryBarrierWithGroupSync();
 	}
 
 	if (GI < 32)
@@ -110,6 +121,31 @@ void PostFX( uint3 Gid : SV_GroupID, uint3 DTid : SV_DispatchThreadID, uint3 GTi
 		sharedMem[GI] += sharedMem[GI + 8];
 		sharedMem[GI] += sharedMem[GI + 2];
 		sharedMem[GI] += sharedMem[GI + 1];
+	}
+#elif OPTIMIZATION == 5
+	if (groupthreads >= 512)
+	{
+		if (GI < 256)
+			sharedMem[GI] += sharedMem[GI + 256];
+	}
+	if (groupthreads >= 256)
+	{
+		if (GI < 128)
+			sharedMem[GI] += sharedMem[GI + 128];
+	}
+	if (groupthreads >= 128)
+	{
+		if (GI < 64)
+			sharedMem[GI] += sharedMem[GI + 64];
+	}
+	if (GI < 32)
+	{
+		if (groupthreads >= 64) sharedMem[GI] += sharedMem[GI + 32];
+		if (groupthreads >= 32) sharedMem[GI] += sharedMem[GI + 16];
+		if (groupthreads >= 16)sharedMem[GI] += sharedMem[GI + 8];
+		if (groupthreads >= 8)sharedMem[GI] += sharedMem[GI + 4];
+		if (groupthreads >= 4)sharedMem[GI] += sharedMem[GI + 2];
+		if (groupthreads >= 2)sharedMem[GI] += sharedMem[GI + 1];
 	}
 #endif
 	/*
