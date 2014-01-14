@@ -67,6 +67,9 @@ void PostFX( uint3 Gid : SV_GroupID, uint3 DTid : SV_DispatchThreadID, uint3 GTi
 #if OPTIMIZATION == 3 || 4 || 5
 	// store in shared memory    
 	sharedMem[GI] = dot(Input[idx * 2], LumVector) + dot(Input[idx * 2 + 1], LumVector);
+#elif OPTIMIZATION == 6
+// code here 
+
 #else
 	// store in shared memory    
 	sharedMem[GI] = dot(Input[idx], LumVector);
@@ -122,7 +125,7 @@ void PostFX( uint3 Gid : SV_GroupID, uint3 DTid : SV_DispatchThreadID, uint3 GTi
 		sharedMem[GI] += sharedMem[GI + 2];
 		sharedMem[GI] += sharedMem[GI + 1];
 	}
-#elif OPTIMIZATION == 5
+#elif OPTIMIZATION == 5 || 6
 	if (groupthreads >= 512)
 	{
 		if (GI < 256)
@@ -148,44 +151,6 @@ void PostFX( uint3 Gid : SV_GroupID, uint3 DTid : SV_DispatchThreadID, uint3 GTi
 		if (groupthreads >= 2)sharedMem[GI] += sharedMem[GI + 1];
 	}
 #endif
-	/*
-	// Parallel reduction algorithm follows
-	// add up 64..127 to 0..63
-	if ( GI < 64 )
-	accum[GI] += accum[64+GI];
-	GroupMemoryBarrierWithGroupSync();
-
-	if ( GI < 32 )
-	// add up 32..63 to 0..31
-	accum[GI] += accum[32+GI];
-	GroupMemoryBarrierWithGroupSync();
-
-	if ( GI < 16 )
-	// add up 16..31 to 0..15
-	accum[GI] += accum[16+GI];
-	GroupMemoryBarrierWithGroupSync();
-
-	if ( GI < 8 )
-	// add up 8..15 to 0..7
-	accum[GI] += accum[8+GI];
-	GroupMemoryBarrierWithGroupSync();
-
-	if ( GI < 4 )
-	// add up 4..7 to 0..3
-	accum[GI] += accum[4+GI];
-	GroupMemoryBarrierWithGroupSync();
-
-	if ( GI < 2 )
-	// add up 2..3 to 0..1
-	accum[GI] += accum[2+GI];
-	GroupMemoryBarrierWithGroupSync();
-
-	if ( GI < 1 )
-	// add up 1 to 0
-	accum[GI] += accum[1+GI];
-	GroupMemoryBarrierWithGroupSync();
-
-	*/
 
 	// Have the first thread write out to the output
 	if (GI == 0)
