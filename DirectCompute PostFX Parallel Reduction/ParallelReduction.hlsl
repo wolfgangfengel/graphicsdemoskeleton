@@ -105,7 +105,7 @@ void PostFX( uint3 Gid : SV_GroupID, uint3 DTid : SV_DispatchThreadID, uint3 GTi
 
 		GroupMemoryBarrierWithGroupSync();
 	}
-#elif OPTIMIZATION == 4 // #4 Instruction Bottleneck : Unroll last Warp
+#elif OPTIMIZATION == 4 // #4 Instruction Bottleneck : Unroll last Warp | remove some of the memory barriers
 	for (uint s = groupthreads / 2; s > 32; s >>= 1)
 	{
 		if (GI < s)
