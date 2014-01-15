@@ -29,8 +29,8 @@ DEFINE_GUIDW(IID_ID3D11Texture2D,0x6f15aaf2,0xd208,0x4e89,0x9a,0xb4,0x48,0x95,0x
 #define WINWIDTH ((((WINDOWWIDTH + THREADSX - 1) / THREADSX) * THREADSX))	// multiply of ThreadsX 
 #define WINHEIGHT ((((WINDOWHEIGHT + THREADSY - 1) / THREADSY) * THREADSY)) // multiply of ThreadsY
 
-#define WINPOSX 200 
-#define WINPOSY 200
+#define WINPOSX 50 
+#define WINPOSY 50
 
 // makes the applicaton behave well with windows
 // allows to remove some system calls to reduce size
