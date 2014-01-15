@@ -16,7 +16,7 @@
 #4 Instruction Bottleneck : Unroll last Warp
 #5 Completely Unroll
 */
-#define OPTIMIZATION 0
+#define OPTIMIZATION 1
 
 StructuredBuffer<float4> Input : register( t0 );
 RWTexture2D<float4> Result : register (u0);
@@ -75,7 +75,7 @@ void PostFX( uint3 Gid : SV_GroupID, uint3 DTid : SV_DispatchThreadID, uint3 GTi
 	// wait until everything is transfered from device memory to shared memory
 	GroupMemoryBarrierWithGroupSync();
 
-	// 
+	// wonder if this does anything :-)
 	[unroll(groupthreads)]
 
 #if OPTIMIZATION == 0
