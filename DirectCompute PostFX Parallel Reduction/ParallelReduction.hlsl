@@ -15,9 +15,8 @@
 #3 Idle Threads in Thread Group : First add during Global Load
 #4 Instruction Bottleneck : Unroll last Warp
 #5 Completely Unroll
-#6 Multiple Elements per Thread
 */
-#define OPTIMIZATION 5
+#define OPTIMIZATION 0
 
 StructuredBuffer<float4> Input : register( t0 );
 RWTexture2D<float4> Result : register (u0);
@@ -64,7 +63,8 @@ void PostFX( uint3 Gid : SV_GroupID, uint3 DTid : SV_DispatchThreadID, uint3 GTi
 	// read from structured buffer
 	uint idx = DTid.x + DTid.y * c_width;
 
-#if OPTIMIZATION == 3 || 4 || 5
+	// #3 Idle Threads in Thread Group : First add during Global Load
+#if OPTIMIZATION == 3 || 4 || 5 
 	// store in shared memory    
 	sharedMem[GI] = dot(Input[idx * 2], LumVector) + dot(Input[idx * 2 + 1], LumVector);
 #else
@@ -87,7 +87,7 @@ void PostFX( uint3 Gid : SV_GroupID, uint3 DTid : SV_DispatchThreadID, uint3 GTi
 
 		GroupMemoryBarrierWithGroupSync();
 	}
-#elif OPTIMIZATION == 1
+#elif OPTIMIZATION == 1 // Interleaved Shared Memory Addressing : Divergent Branching -> removed divergent branching
 	for (uint s = 1; s < groupthreads; s *= 2)
 	{
 		int index = 2 * s * GI;
@@ -97,7 +97,7 @@ void PostFX( uint3 Gid : SV_GroupID, uint3 DTid : SV_DispatchThreadID, uint3 GTi
 
 		GroupMemoryBarrierWithGroupSync();
 	}
-#elif OPTIMIZATION == 2 || 3
+#elif OPTIMIZATION == 2 || 3 // Interleaved Shared Memory Addressing : Shared Memory Bank Conflicts -> from interleaved to sequential memory access
 	for (uint s = groupthreads / 2; s > 0; s >>= 1)
 	{
 		if (GI < s)
@@ -105,7 +105,7 @@ void PostFX( uint3 Gid : SV_GroupID, uint3 DTid : SV_DispatchThreadID, uint3 GTi
 
 		GroupMemoryBarrierWithGroupSync();
 	}
-#elif OPTIMIZATION == 4
+#elif OPTIMIZATION == 4 // #4 Instruction Bottleneck : Unroll last Warp
 	for (uint s = groupthreads / 2; s > 32; s >>= 1)
 	{
 		if (GI < s)
@@ -122,7 +122,7 @@ void PostFX( uint3 Gid : SV_GroupID, uint3 DTid : SV_DispatchThreadID, uint3 GTi
 		sharedMem[GI] += sharedMem[GI + 2];
 		sharedMem[GI] += sharedMem[GI + 1];
 	}
-#elif OPTIMIZATION == 5
+#elif OPTIMIZATION == 5  // #5 Completely Unroll
 	if (groupthreads >= 512)
 	{
 		if (GI < 256)
