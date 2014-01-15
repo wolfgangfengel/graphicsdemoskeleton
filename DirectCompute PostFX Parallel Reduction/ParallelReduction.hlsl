@@ -67,9 +67,6 @@ void PostFX( uint3 Gid : SV_GroupID, uint3 DTid : SV_DispatchThreadID, uint3 GTi
 #if OPTIMIZATION == 3 || 4 || 5
 	// store in shared memory    
 	sharedMem[GI] = dot(Input[idx * 2], LumVector) + dot(Input[idx * 2 + 1], LumVector);
-#elif OPTIMIZATION == 6
-// code here 
-
 #else
 	// store in shared memory    
 	sharedMem[GI] = dot(Input[idx], LumVector);
@@ -125,21 +122,25 @@ void PostFX( uint3 Gid : SV_GroupID, uint3 DTid : SV_DispatchThreadID, uint3 GTi
 		sharedMem[GI] += sharedMem[GI + 2];
 		sharedMem[GI] += sharedMem[GI + 1];
 	}
-#elif OPTIMIZATION == 5 || 6
+#elif OPTIMIZATION == 5
 	if (groupthreads >= 512)
 	{
 		if (GI < 256)
 			sharedMem[GI] += sharedMem[GI + 256];
+		GroupMemoryBarrierWithGroupSync();
+
 	}
 	if (groupthreads >= 256)
 	{
 		if (GI < 128)
 			sharedMem[GI] += sharedMem[GI + 128];
+		GroupMemoryBarrierWithGroupSync();
 	}
 	if (groupthreads >= 128)
 	{
 		if (GI < 64)
 			sharedMem[GI] += sharedMem[GI + 64];
+		GroupMemoryBarrierWithGroupSync();
 	}
 	if (GI < 32)
 	{
