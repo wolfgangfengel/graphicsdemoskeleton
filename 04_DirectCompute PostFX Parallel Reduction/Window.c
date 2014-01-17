@@ -23,8 +23,8 @@ DEFINE_GUIDW(IID_ID3D11Texture2D,0x6f15aaf2,0xd208,0x4e89,0x9a,0xb4,0x48,0x95,0x
 // define the size of the window
 #define THREADSX 16			// number of threads in the thread group used in the compute shader
 #define THREADSY 16			// number of threads in the thread group used in the compute shader
-#define WINDOWWIDTH 1280 
-#define WINDOWHEIGHT 720
+#define WINDOWWIDTH 4096  
+#define WINDOWHEIGHT 2160 
 
 #define WINWIDTH ((((WINDOWWIDTH + THREADSX - 1) / THREADSX) * THREADSX))	// multiply of ThreadsX 
 #define WINHEIGHT ((((WINDOWHEIGHT + THREADSY - 1) / THREADSY) * THREADSY)) // multiply of ThreadsY
