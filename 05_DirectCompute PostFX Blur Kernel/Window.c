@@ -14,8 +14,6 @@
 #include <sal.h>
 #include <rpcsal.h>
 
-#include <math.h> // for exp
-
 #define DEFINE_GUIDW(name, l, w1, w2, b1, b2, b3, b4, b5, b6, b7, b8) const GUID DECLSPEC_SELECTANY name = { l, w1, w2, { b1, b2,  b3,  b4,  b5,  b6,  b7,  b8 } }
 DEFINE_GUIDW(IID_ID3D11Texture2D,0x6f15aaf2,0xd208,0x4e89,0x9a,0xb4,0x48,0x95,0x35,0xd3,0x4f,0x9c);
 
@@ -27,7 +25,8 @@ DEFINE_GUIDW(IID_ID3D11Texture2D,0x6f15aaf2,0xd208,0x4e89,0x9a,0xb4,0x48,0x95,0x
 #define CLAMP(n,min,max)                        ((n < min) ? min : (n > max) ? max : n)
 // #define Distance(a,b)                           sqrtf((a-b) * (a-b))
 #define MIN(X,Y) ((X) < (Y) ? (X) : (Y))
-#define CEILING(x,y) (((x) + (y) - 1) / (y))
+//#define CEIL_DIV(x,y) (((x) + (y) - 1) / (y))
+#define CEIL(VARIABLE) ( (VARIABLE - (int)VARIABLE)==0 ? (int)VARIABLE : (int)VARIABLE+1 )
 #define SQUARE(a) a*a
 
 // define the size of the window
@@ -171,9 +170,18 @@ typedef struct
 * @param Variance - The normal distribution's variance.
 * @return The value of the normal distribution at X. (unscaled)
 */
+
+int EXP(int base, int power) 
+{
+	int result = base;
+	for (int ii = 0; ii<power - 1; ii++)
+		result *= base;
+	return result;
+}
+
 static float NormalDistributionUnscaled(float X,float Mean,float Variance)
 {
-	return (float) exp(-SQUARE(X - Mean) / (2.0f * Variance));
+	return (float)EXP(2, -SQUARE(X - Mean) / (2.0f * Variance));
 }
 
 //	
@@ -182,7 +190,7 @@ static int CalculateWeights(float KernelRadius, DOF_BUFFER *buffer)
 	const unsigned int DELTA = 1;
 
 	float ClampedKernelRadius = CLAMP(KernelRadius, DELTA, DOF_BLUR_KERNEL_RADIUS_MAX);
-	INT IntegerKernelRadius = MIN(ceil(ClampedKernelRadius), DOF_BLUR_KERNEL_RADIUS_MAX);
+	INT IntegerKernelRadius = MIN(CEIL(ClampedKernelRadius), DOF_BLUR_KERNEL_RADIUS_MAX);
 
 	// smallest IntegerKernelRadius will be 1
 
