@@ -17,7 +17,7 @@
 
 #define ITERATIONS                  10
 
-RWStructuredBuffer<float4> output : register (u0); // UAV 0
+RWTexture2D<float4> output : register (u0);
 
 // constants that can change per frame
 cbuffer cbCS : register( b0 )
@@ -401,7 +401,7 @@ void CS_QJulia4D( uint3 Gid : SV_GroupID, uint3 DTid : SV_DispatchThreadID, uint
     float4 color = QJulia(rO, rD, c_mu, c_epsilon, eye, light, c_selfShadow);
 
 	// buffer stride, assumes data stride = data width (i.e. no padding)
-	uint idx = DTid.x + DTid.y * c_width;
-	output[idx] = color;  
+	//uint idx = DTid.x + DTid.y * c_width;
+	output[DTid.xy] = color;
 }
 

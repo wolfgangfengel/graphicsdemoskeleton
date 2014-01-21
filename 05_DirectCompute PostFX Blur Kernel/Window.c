@@ -14,17 +14,27 @@
 #include <sal.h>
 #include <rpcsal.h>
 
+#include <math.h> // for exp
+
 #define DEFINE_GUIDW(name, l, w1, w2, b1, b2, b3, b4, b5, b6, b7, b8) const GUID DECLSPEC_SELECTANY name = { l, w1, w2, { b1, b2,  b3,  b4,  b5,  b6,  b7,  b8 } }
 DEFINE_GUIDW(IID_ID3D11Texture2D,0x6f15aaf2,0xd208,0x4e89,0x9a,0xb4,0x48,0x95,0x35,0xd3,0x4f,0x9c);
 
 #include <d3d11.h>
 #include <d3dcompiler.h>
 
+// Macros
+// Macros are error-prone because they rely on textual substitution and do not perform type-checking.
+#define CLAMP(n,min,max)                        ((n < min) ? min : (n > max) ? max : n)
+// #define Distance(a,b)                           sqrtf((a-b) * (a-b))
+#define MIN(X,Y) ((X) < (Y) ? (X) : (Y))
+#define CEILING(x,y) (((x) + (y) - 1) / (y))
+#define SQUARE(a) a*a
+
 // define the size of the window
 #define THREADSX 16			// number of threads in the thread group used in the compute shader
 #define THREADSY 16			// number of threads in the thread group used in the compute shader
-#define WINDOWWIDTH 1280  
-#define WINDOWHEIGHT 720 
+#define WINDOWWIDTH 1024  
+#define WINDOWHEIGHT 768 
 
 #define WINWIDTH ((((WINDOWWIDTH + THREADSX - 1) / THREADSX) * THREADSX))	// multiply of ThreadsX 
 #define WINHEIGHT ((((WINDOWHEIGHT + THREADSY - 1) / THREADSY) * THREADSY)) // multiply of ThreadsY
@@ -36,8 +46,16 @@ DEFINE_GUIDW(IID_ID3D11Texture2D,0x6f15aaf2,0xd208,0x4e89,0x9a,0xb4,0x48,0x95,0x
 // allows to remove some system calls to reduce size
 #define WELLBEHAVIOUR
 
+// for the blur kernel filter
+#define DOF_BLUR_KERNEL_RADIUS_MAX 16
+#define DOF_BLUR_KERNEL_RADIUS 8 
+#define RUN_SIZE	128 	//	Pixels to process per line per kernel invocation
+#define RUN_LINES	2  		//	Lines to process per kernel invocation
+
+
 #include "qjulia4D.sh"
-#include "ParallelReduction.sh"
+#include "BlurKernelX.sh"
+#include "BlurKernelY.sh"
 
 //
 // Random number generator
@@ -139,6 +157,66 @@ UpdateColor( float t[4], float a[4], float b[4] )
     }
 }
 
+typedef struct 
+{
+	float	KernelWeights[DOF_BLUR_KERNEL_RADIUS_MAX + 1];
+}DOF_BUFFER;
+
+//	Igor: This should be synchronous to the NormalDistributionUnscaled in the SceneFilterRendering.cpp
+/**
+* Evaluates a normal distribution PDF at given X.
+* This function misses the math for scaling the result (faster, not needed if the resulting values are renormalized).
+* @param X - The X to evaluate the PDF at.
+* @param Mean - The normal distribution's mean.
+* @param Variance - The normal distribution's variance.
+* @return The value of the normal distribution at X. (unscaled)
+*/
+static float NormalDistributionUnscaled(float X,float Mean,float Variance)
+{
+	return (float) exp(-SQUARE(X - Mean) / (2.0f * Variance));
+}
+
+//	
+static int CalculateWeights(float KernelRadius, DOF_BUFFER *buffer)
+{
+	const unsigned int DELTA = 1;
+
+	float ClampedKernelRadius = CLAMP(KernelRadius, DELTA, DOF_BLUR_KERNEL_RADIUS_MAX);
+	INT IntegerKernelRadius = MIN(ClampedKernelRadius, DOF_BLUR_KERNEL_RADIUS_MAX);
+
+	// smallest IntegerKernelRadius will be 1
+
+	float WeightSum = 0.0f;
+	for (INT SampleIndex = 0; SampleIndex <= IntegerKernelRadius; ++SampleIndex)
+	{
+		float Weight = NormalDistributionUnscaled(SampleIndex, 0, ClampedKernelRadius);
+
+		buffer->KernelWeights[SampleIndex] = Weight;
+		//	Igor: All the samples with non-0 index contribute to the total sum twice as [i] and [-i]
+		WeightSum += SampleIndex ? Weight * 2 : Weight;
+	}
+
+	// Normalize blur weights.
+	float InvWeightSum = 1.0f / WeightSum;
+	for (INT SampleIndex = 0; SampleIndex <= IntegerKernelRadius; ++SampleIndex)
+	{
+		buffer->KernelWeights[SampleIndex] = buffer->KernelWeights[SampleIndex] * InvWeightSum;
+	}
+	/*
+	WeightSum = 0;
+	for (INT SampleIndex = 0; SampleIndex <= IntegerKernelRadius; ++SampleIndex)
+	{
+		WeightSum += buffer->KernelWeights[SampleIndex].w;
+	}
+
+	for (INT SampleIndex = 1; SampleIndex <= IntegerKernelRadius; ++SampleIndex)
+	{
+		WeightSum += buffer->KernelWeights[SampleIndex].w;
+	}
+	*/
+	return IntegerKernelRadius;
+}
+
 
 #if 0 
 
@@ -174,15 +252,26 @@ __declspec( naked )  void __cdecl winmain()
 	ID3D11DeviceContext *pImmediateContext;
 
 	ID3D11Buffer*		    	pcbFractal;      // constant buffer
-	ID3D11UnorderedAccessView*  pComputeOutput;  // output into back buffer
-	ID3D11UnorderedAccessView*  pComputeOutputUAV;  // output into structured buffer
-	ID3D11ShaderResourceView*	pComputeShaderSRV;
-	ID3D11Buffer*				pStructuredBuffer;
+	ID3D11UnorderedAccessView*  pUAVBackbuffer;  // output into back buffer
+	ID3D11UnorderedAccessView*  pUAVTempTexture;  // output into texture 2D
+	ID3D11ShaderResourceView*	pSRVTempTexture;  // SRV for temporary texture
+	ID3D11ShaderResourceView*	pSRVBackBuffer; // SRV for back buffer
+	ID3D11Texture2D *pTempTexture;
 
 	static D3D11_BUFFER_DESC sbDesc;
 	static D3D11_UNORDERED_ACCESS_VIEW_DESC sbUAVDesc;
 	static D3D11_SHADER_RESOURCE_VIEW_DESC sbSRVDesc;
-	static D3D11_BUFFER_DESC Desc;
+	static D3D11_BUFFER_DESC Desc;					// constant buffer
+	static D3D11_TEXTURE2D_DESC TextureDesc;
+
+	//
+	// compile the compute shaders
+	//
+	ID3D11ComputeShader *pCompiledComputeShader;
+	ID3D11ComputeShader *pCompiledCSFilterXComputeShader;
+	ID3D11ComputeShader *pCompiledCSFilterYComputeShader;
+
+	static DOF_BUFFER DOFBuf;
 
 	static float gSaturation = 1.0f;
 
@@ -257,6 +346,9 @@ __declspec( naked )  void __cdecl winmain()
 		float mu[4];    // quaternion julia parameter
 		float orientation[4*4]; // rotation matrix
 		float zoom;
+		float dummy[3];
+
+		float KernelWeights[DOF_BLUR_KERNEL_RADIUS_MAX + 1];
 	} MainConstantBuffer;
 
 #if defined(_DEBUG)
@@ -267,7 +359,7 @@ __declspec( naked )  void __cdecl winmain()
     Desc.Usage = D3D11_USAGE_DYNAMIC;
     Desc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
     Desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-	Desc.ByteWidth = ((sizeof(MainConstantBuffer)+15) / 16) * 16; // must be multiple of 16 bytes
+	Desc.ByteWidth = 272; //  ((sizeof(MainConstantBuffer) //  +15) / 16) * 16; // must be multiple of 16 bytes
 #if defined(_DEBUG)
 	hr =
 #endif
@@ -278,59 +370,72 @@ __declspec( naked )  void __cdecl winmain()
 		MessageBoxA(NULL, "Julia4D constant buffer failed", "Error", MB_OK | MB_ICONERROR);
 #endif
 
-	// 
-	// structured buffer + shader resource view and unordered access view
-	//
-	typedef struct
-	{
-		float color[4];
-	} BufferStruct;
+	TextureDesc.Width = WINWIDTH;
+	TextureDesc.Height = WINHEIGHT;
+	TextureDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	TextureDesc.MipLevels = 1;
+	TextureDesc.SampleDesc.Count = 1;
+	TextureDesc.Usage = D3D11_USAGE_DEFAULT;
+	TextureDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
+	TextureDesc.ArraySize = 1;
+//	TextureDesc.MiscFlags = 0;
 
-	sbDesc.BindFlags = D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE;
-	sbDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
-	sbDesc.StructureByteStride = sizeof(BufferStruct);
-	sbDesc.ByteWidth = sbDesc.StructureByteStride * WINWIDTH * WINHEIGHT + 1280;
-	sbDesc.Usage = D3D11_USAGE_DEFAULT;
-	pd3dDevice->lpVtbl->CreateBuffer(pd3dDevice, &sbDesc, NULL, &pStructuredBuffer);
-	
-	// UAV
-	sbUAVDesc.Buffer.NumElements = sbDesc.ByteWidth / sbDesc.StructureByteStride;
-	sbUAVDesc.Format = DXGI_FORMAT_UNKNOWN;
-	sbUAVDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
 #if defined(_DEBUG)
 	hr =
 #endif
-		pd3dDevice->lpVtbl->CreateUnorderedAccessView(pd3dDevice, (ID3D11Resource *)pStructuredBuffer, &sbUAVDesc, &pComputeOutputUAV);
+	pd3dDevice->lpVtbl->CreateTexture2D(pd3dDevice, &TextureDesc, NULL, &pTempTexture);
 
 #if defined(_DEBUG)
 	if (hr != S_OK)
-		MessageBoxA(NULL, "UAV creation failed", "Error", MB_OK | MB_ICONERROR);
+		MessageBoxA(NULL, "Texture creation failed", "Error", MB_OK | MB_ICONERROR);
 #endif
 
-	// SRV on structured buffer
-	sbSRVDesc.Buffer.ElementWidth = sbDesc.StructureByteStride;
-	sbSRVDesc.Buffer.FirstElement = sbUAVDesc.Buffer.FirstElement;
-	sbSRVDesc.Buffer.NumElements = sbUAVDesc.Buffer.NumElements;
-	sbSRVDesc.Format = DXGI_FORMAT_UNKNOWN;
-	sbSRVDesc.ViewDimension = D3D11_SRV_DIMENSION_BUFFER;
+	// get UAV on the temp texture ...
 #if defined(_DEBUG)
 	hr =
 #endif
-		pd3dDevice->lpVtbl->CreateShaderResourceView(pd3dDevice, (ID3D11Resource *)pStructuredBuffer, &sbSRVDesc, &pComputeShaderSRV);
+		pd3dDevice->lpVtbl->CreateUnorderedAccessView(pd3dDevice, (ID3D11Resource*) pTempTexture, NULL, &pUAVTempTexture);
+
+#if defined(_DEBUG)
+	if (hr != S_OK)
+		MessageBoxA(NULL, "UA View creation failed", "Error", MB_OK | MB_ICONERROR);
+#endif
+
+	// SRV on temp texture
+	sbSRVDesc.Format = TextureDesc.Format;
+	sbSRVDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+	sbSRVDesc.Texture2D.MipLevels = 1;
+
+#if defined(_DEBUG)
+	hr =
+#endif
+		pd3dDevice->lpVtbl->CreateShaderResourceView(pd3dDevice, (ID3D11Resource *) pTempTexture, &sbSRVDesc, &pSRVTempTexture);
 
 #if defined(_DEBUG)
 	if (hr != S_OK)
 		MessageBoxA(NULL, "SRV creation failed", "Error", MB_OK | MB_ICONERROR);
 #endif
 	
+	// back buffer UAV
 	// create shader unordered access view on back buffer for compute shader to write into texture
-	pd3dDevice->lpVtbl->CreateUnorderedAccessView(pd3dDevice, (ID3D11Resource*)pTexture, NULL, &pComputeOutput);
+	pd3dDevice->lpVtbl->CreateUnorderedAccessView(pd3dDevice, (ID3D11Resource*) pTexture, NULL, &pUAVBackbuffer);
 
-	//
-	// compile the compute shaders
-	//
-	ID3D11ComputeShader *pCompiledComputeShader;
-	ID3D11ComputeShader *pCompiledPostFXComputeShader;
+	// SRV on backbuffer
+	sbSRVDesc.Format = TextureDesc.Format;
+	sbSRVDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+	sbSRVDesc.Texture2D.MipLevels = 1;
+
+#if defined(_DEBUG)
+	hr =
+#endif
+		pd3dDevice->lpVtbl->CreateShaderResourceView(pd3dDevice, (ID3D11Resource *) pTexture, &sbSRVDesc, &pSRVBackBuffer);
+
+#if defined(_DEBUG)
+	if (hr != S_OK)
+		MessageBoxA(NULL, "SRV creation failed", "Error", MB_OK | MB_ICONERROR);
+#endif
+
+	CalculateWeights(8.0, &DOFBuf);
 
 #if defined(_DEBUG)
 	hr =
@@ -339,7 +444,11 @@ __declspec( naked )  void __cdecl winmain()
 #if defined(_DEBUG)
 	hr =
 #endif
-		pd3dDevice->lpVtbl->CreateComputeShader(pd3dDevice, g_PostFX, sizeof(g_PostFX), NULL, &pCompiledPostFXComputeShader);
+		pd3dDevice->lpVtbl->CreateComputeShader(pd3dDevice, g_CSFilterX, sizeof(g_CSFilterX), NULL, &pCompiledCSFilterXComputeShader);
+#if defined(_DEBUG)
+	hr =
+#endif
+		pd3dDevice->lpVtbl->CreateComputeShader(pd3dDevice, g_CSFilterY, sizeof(g_CSFilterY), NULL, &pCompiledCSFilterYComputeShader);
 
 #if defined(_DEBUG)
 	if (hr != S_OK)
@@ -419,18 +528,38 @@ __declspec( naked )  void __cdecl winmain()
 //		mc->orientation[14] = 0.0;
 		mc->orientation[15] = 1.0;
     	mc->zoom = zoom;
+		mc->dummy[0] = 0;
+		mc->dummy[1] = 0;
+		mc->dummy[2] = 0;
+
+		mc->KernelWeights[0] = DOFBuf.KernelWeights[0];
+		mc->KernelWeights[1] = DOFBuf.KernelWeights[1];
+		mc->KernelWeights[2] = DOFBuf.KernelWeights[2];
+		mc->KernelWeights[3] = DOFBuf.KernelWeights[3];
+		mc->KernelWeights[4] = DOFBuf.KernelWeights[4];
+		mc->KernelWeights[5] = DOFBuf.KernelWeights[5];
+		mc->KernelWeights[6] = DOFBuf.KernelWeights[6];
+		mc->KernelWeights[7] = DOFBuf.KernelWeights[7];
+		mc->KernelWeights[8] = DOFBuf.KernelWeights[8];
+		mc->KernelWeights[9] = DOFBuf.KernelWeights[9];
+		mc->KernelWeights[10] = DOFBuf.KernelWeights[10];
+		mc->KernelWeights[11] = DOFBuf.KernelWeights[11];
+		mc->KernelWeights[12] = DOFBuf.KernelWeights[12];
+		mc->KernelWeights[13] = DOFBuf.KernelWeights[13];
+		mc->KernelWeights[14] = DOFBuf.KernelWeights[14];
+		mc->KernelWeights[15] = DOFBuf.KernelWeights[15];
+		mc->KernelWeights[16] = DOFBuf.KernelWeights[16];
 
   		pImmediateContext->lpVtbl->Unmap(pImmediateContext, (ID3D11Resource *)pcbFractal,0);
-
 
 		//
 		// run the Julia 4D code
 		//
-    	// Set compute shader
+		// Set compute shader
     	pImmediateContext->lpVtbl->CSSetShader(pImmediateContext, pCompiledComputeShader, NULL, 0 );
 
     	// For CS output
-		pImmediateContext->lpVtbl->CSSetUnorderedAccessViews(pImmediateContext, 0, 1, &pComputeOutputUAV, NULL);
+		pImmediateContext->lpVtbl->CSSetUnorderedAccessViews(pImmediateContext, 0, 1, &pUAVBackbuffer, NULL);
 
     	// For CS constant buffer
 		// set constanct buffer b0
@@ -439,28 +568,59 @@ __declspec( naked )  void __cdecl winmain()
     	// Run the CS
 		pImmediateContext->lpVtbl->Dispatch(pImmediateContext, WINWIDTH / THREADSX, WINHEIGHT / THREADSY, 1);
 
+
 		//
-		// run PostFX
+		// run blur kernel in X
 		//
 		// Set compute shader
-		pImmediateContext->lpVtbl->CSSetShader(pImmediateContext, pCompiledPostFXComputeShader, NULL, 0);
+		pImmediateContext->lpVtbl->CSSetShader(pImmediateContext, pCompiledCSFilterXComputeShader, NULL, 0);
 
-		// For CS output
-		pImmediateContext->lpVtbl->CSSetUnorderedAccessViews(pImmediateContext, 0, 1, &pComputeOutput, NULL);
+		// For CS output -> write into temporary texture
+		pImmediateContext->lpVtbl->CSSetUnorderedAccessViews(pImmediateContext, 0, 1, &pUAVTempTexture, NULL);
 
 		// For CS constant buffer
 		// set constanct buffer b0
 		pImmediateContext->lpVtbl->CSSetConstantBuffers(pImmediateContext, 0, 1, &pcbFractal);
 
-		// read the structured buffer
-		pImmediateContext->lpVtbl->CSSetShaderResources(pImmediateContext, 0, 1, &pComputeShaderSRV);
+		// read the backbuffer
+		pImmediateContext->lpVtbl->CSSetShaderResources(pImmediateContext, 0, 1, &pSRVBackBuffer);
 
 		// Run the CS
-		pImmediateContext->lpVtbl->Dispatch(pImmediateContext, WINWIDTH / THREADSX, WINHEIGHT / THREADSY, 1);
+//		const UINT SizeXVertival = ceil(float(WINHEIGHT) / RUN_SIZE);
+//		const UINT SizeYVertival = ceil(float(WINWIDTH) / RUN_LINES);
+
+		pImmediateContext->lpVtbl->Dispatch(pImmediateContext, WINWIDTH / RUN_SIZE, WINHEIGHT / RUN_LINES, 1);
 
 #if defined(WELLBEHAVIOUR)
 		// set back the shader resource view to zero
 		ID3D11ShaderResourceView* pNull = NULL;
+		pImmediateContext->lpVtbl->CSSetShaderResources(pImmediateContext, 0, 1, &pNull);
+#endif
+
+
+		//
+		// run blur kernel in Y
+		//
+		// Set compute shader
+		pImmediateContext->lpVtbl->CSSetShader(pImmediateContext, pCompiledCSFilterYComputeShader, NULL, 0);
+
+		// For CS output -> write into the back buffer
+		pImmediateContext->lpVtbl->CSSetUnorderedAccessViews(pImmediateContext, 0, 1, &pUAVBackbuffer, NULL);
+
+		// For CS constant buffer
+		// set constanct buffer b0
+		pImmediateContext->lpVtbl->CSSetConstantBuffers(pImmediateContext, 0, 1, &pcbFractal);
+
+		// read the temporary texture
+		pImmediateContext->lpVtbl->CSSetShaderResources(pImmediateContext, 0, 1, &pSRVTempTexture);
+
+		// Run the CS
+		//		const UINT SizeXVertival = ceil(float(WINHEIGHT) / RUN_SIZE);
+		//		const UINT SizeYVertival = ceil(float(WINWIDTH) / RUN_LINES);
+
+		pImmediateContext->lpVtbl->Dispatch(pImmediateContext, WINHEIGHT / RUN_SIZE, WINWIDTH / RUN_LINES, 1);
+
+#if defined(WELLBEHAVIOUR)
 		pImmediateContext->lpVtbl->CSSetShaderResources(pImmediateContext, 0, 1, &pNull);
 #endif
 
@@ -473,13 +633,16 @@ __declspec( naked )  void __cdecl winmain()
 	    pImmediateContext->lpVtbl->ClearState(pImmediateContext);
 	    pd3dDevice->lpVtbl->Release(pd3dDevice);
 	    pSwapChain->lpVtbl->Release(pSwapChain);	 
-	    pTexture->lpVtbl->Release(pTexture);	
-    	pcbFractal->lpVtbl->Release(pcbFractal);
-		pStructuredBuffer->lpVtbl->Release(pStructuredBuffer);
-		pComputeOutputUAV->lpVtbl->Release(pComputeOutputUAV);
-		pComputeShaderSRV->lpVtbl->Release(pComputeShaderSRV);
-		pComputeOutput->lpVtbl->Release(pComputeOutput);
-
+		pcbFractal->lpVtbl->Release(pcbFractal);
+		pTexture->lpVtbl->Release(pTexture);
+		pTempTexture->lpVtbl->Release(pTempTexture);
+		pUAVTempTexture->lpVtbl->Release(pUAVTempTexture);
+		pUAVBackbuffer->lpVtbl->Release(pUAVBackbuffer);
+		pSRVTempTexture->lpVtbl->Release(pSRVTempTexture);
+		pSRVBackBuffer->lpVtbl->Release(pSRVBackBuffer);
+		pCompiledComputeShader->lpVtbl->Release(pCompiledComputeShader);
+		pCompiledCSFilterXComputeShader->lpVtbl->Release(pCompiledCSFilterXComputeShader);
+		pCompiledCSFilterYComputeShader->lpVtbl->Release(pCompiledCSFilterYComputeShader);
 #endif
 
 #if 0 
