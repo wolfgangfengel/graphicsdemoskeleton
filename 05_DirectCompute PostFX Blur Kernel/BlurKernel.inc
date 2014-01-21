@@ -17,11 +17,14 @@
 #define	DOF_BLUR_KERNEL_RADIUS_MAX 16
 
 // this needs to be the same as on the application level 
-#define DOF_BLUR_KERNEL_RADIUS 8
+#define DOF_BLUR_KERNEL_RADIUS 4
 
 #if	DOF_BLUR_KERNEL_RADIUS > DOF_BLUR_KERNEL_RADIUS_MAX
 Error.
 #endif
+
+Texture2D Input : register(t0);
+RWTexture2D<float4> Output : register(u0);
 
 
 // constants that can change per frame
@@ -34,12 +37,13 @@ cbuffer cbCS : register( b0 )
 	float4 c_diffuse : packoffset(c1);	// diffuse shading color
 	float4 c_mu : packoffset(c2);		// julia quaternion parameter
 	float4x4 rotation : packoffset(c3);
-	float4 zoom : packoffset(c7);
-	float KernelWeights[DOF_BLUR_KERNEL_RADIUS_MAX + 1] : packoffset(c8);
+	float zoom : packoffset(c7); // zoom with dummy offset 
+	float KernelWeights[DOF_BLUR_KERNEL_RADIUS + 1] : packoffset(c8);
 };
 
-Texture2D Input : register(t0);
-RWTexture2D<float4> Output : register(u0);
+
+
+
 
 #define KERNEL_RADIUS DOF_BLUR_KERNEL_RADIUS
 
@@ -117,6 +121,14 @@ struct CS_Output
 //--------------------------------------------------------------------------------------
 CS_Output ComputeFilterKernel(int iPixelOffset, int iLineOffset)
 {
+
+	float KernelWeights[5];
+	KernelWeights[0] = 0.00854818523;
+	KernelWeights[1] = 0.0232363734;
+	KernelWeights[2] = 0.0631630123;
+	KernelWeights[3] = 0.171694890;
+	KernelWeights[4] = 0.466715068;
+
 	CS_Output O;
 	int i, j;
 	float fWeightSum[PIXELS_PER_THREAD];
@@ -136,12 +148,23 @@ CS_Output ComputeFilterKernel(int iPixelOffset, int iLineOffset)
 
 	// Run through the kernel
 	[unroll]
+	// 0..8
 	for (j = 0; j < KERNEL_DIAMETER; ++j)
 	{
 		// Perform kernel step for PIXELS_PER_THREAD pixels
 		[unroll]
 		for (i = 0; i < PIXELS_PER_THREAD; ++i)
 		{
+			// indices into contanst buffer weights
+			// first run abs(0 - 4) = 4
+			// first run abs(1 - 4) = 3
+			// first run abs(2 - 4) = 2
+			// first run abs(3 - 4) = 1
+			// first run abs(4 - 4) = 0
+			// first run abs(5 - 4) = 1
+			// first run abs(6 - 4) = 2
+			// first run abs(7 - 4) = 3
+			// first run abs(8 - 4) = 4
 			float w = KernelWeights[abs(j - KERNEL_RADIUS)];
 			O.fOutput[i] += w * f4Temp[i];
 			fWeightSum[i] += w;
@@ -162,7 +185,7 @@ CS_Output ComputeFilterKernel(int iPixelOffset, int iLineOffset)
 	[unroll]
 	for (i = 0; i < PIXELS_PER_THREAD; ++i)
 	{
-		//O.fOutput[i] /= fWeightSum[i];
+		O.fOutput[i] /= fWeightSum[i];
 	}
 
 	return O;

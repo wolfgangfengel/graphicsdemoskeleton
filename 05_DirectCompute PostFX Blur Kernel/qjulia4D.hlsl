@@ -29,7 +29,10 @@ cbuffer cbCS : register( b0 )
 	float4 c_diffuse : packoffset(c1);	// diffuse shading color
 	float4 c_mu : packoffset(c2);		// julia quaternion parameter
 	float4x4 rotation : packoffset(c3);
-	float zoom : packoffset(c7.x);
+	float zoom : packoffset(c7);
+	// not used here 
+	//float KernelWeights[DOF_BLUR_KERNEL_RADIUS + 1] : packoffset(c8);
+
 };
 
 

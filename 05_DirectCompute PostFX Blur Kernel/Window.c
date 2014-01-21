@@ -48,7 +48,7 @@ DEFINE_GUIDW(IID_ID3D11Texture2D,0x6f15aaf2,0xd208,0x4e89,0x9a,0xb4,0x48,0x95,0x
 
 // for the blur kernel filter
 #define DOF_BLUR_KERNEL_RADIUS_MAX 16
-#define DOF_BLUR_KERNEL_RADIUS 8 
+#define DOF_BLUR_KERNEL_RADIUS 4 
 #define RUN_SIZE	128 	//	Pixels to process per line per kernel invocation
 #define RUN_LINES	2  		//	Lines to process per kernel invocation
 
@@ -182,14 +182,14 @@ static int CalculateWeights(float KernelRadius, DOF_BUFFER *buffer)
 	const unsigned int DELTA = 1;
 
 	float ClampedKernelRadius = CLAMP(KernelRadius, DELTA, DOF_BLUR_KERNEL_RADIUS_MAX);
-	INT IntegerKernelRadius = MIN(ClampedKernelRadius, DOF_BLUR_KERNEL_RADIUS_MAX);
+	INT IntegerKernelRadius = MIN(ceil(ClampedKernelRadius), DOF_BLUR_KERNEL_RADIUS_MAX);
 
 	// smallest IntegerKernelRadius will be 1
 
 	float WeightSum = 0.0f;
 	for (INT SampleIndex = 0; SampleIndex <= IntegerKernelRadius; ++SampleIndex)
 	{
-		float Weight = NormalDistributionUnscaled(SampleIndex, 0, ClampedKernelRadius);
+		float Weight = NormalDistributionUnscaled(SampleIndex, 0, ClampedKernelRadius) * 2;
 
 		buffer->KernelWeights[SampleIndex] = Weight;
 		//	Igor: All the samples with non-0 index contribute to the total sum twice as [i] and [-i]
@@ -345,10 +345,9 @@ __declspec( naked )  void __cdecl winmain()
 		float diffuse[4]; // diffuse shading color
 		float mu[4];    // quaternion julia parameter
 		float orientation[4*4]; // rotation matrix
-		float zoom;
-		float dummy[3];
-
-		float KernelWeights[DOF_BLUR_KERNEL_RADIUS_MAX + 1];
+		float zoom[4]; // with three dummy values to 
+		// for the DOF weights
+		float KernelWeights[DOF_BLUR_KERNEL_RADIUS + 1];
 	} MainConstantBuffer;
 
 #if defined(_DEBUG)
@@ -359,7 +358,8 @@ __declspec( naked )  void __cdecl winmain()
     Desc.Usage = D3D11_USAGE_DYNAMIC;
     Desc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
     Desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-	Desc.ByteWidth = 272; //  ((sizeof(MainConstantBuffer) //  +15) / 16) * 16; // must be multiple of 16 bytes
+//	unsigned int SizeOfConstBuffer = sizeof(MainConstantBuffer);
+	Desc.ByteWidth = 208; // ((sizeof(MainConstantBuffer)+15) / 16) * 16; // must be multiple of 16 bytes // 13 x 16 bytes
 #if defined(_DEBUG)
 	hr =
 #endif
@@ -435,7 +435,7 @@ __declspec( naked )  void __cdecl winmain()
 		MessageBoxA(NULL, "SRV creation failed", "Error", MB_OK | MB_ICONERROR);
 #endif
 
-	CalculateWeights(8.0, &DOFBuf);
+	CalculateWeights(DOF_BLUR_KERNEL_RADIUS, &DOFBuf);
 
 #if defined(_DEBUG)
 	hr =
@@ -527,28 +527,15 @@ __declspec( naked )  void __cdecl winmain()
 //		mc->orientation[13] = 0.0;
 //		mc->orientation[14] = 0.0;
 		mc->orientation[15] = 1.0;
-    	mc->zoom = zoom;
-		mc->dummy[0] = 0;
-		mc->dummy[1] = 0;
-		mc->dummy[2] = 0;
+    	mc->zoom[0] = zoom;
+		mc->zoom[1] = 0.0;
+		mc->zoom[2] = 0.0;
+		mc->zoom[3] = 0.0;
 
-		mc->KernelWeights[0] = DOFBuf.KernelWeights[0];
-		mc->KernelWeights[1] = DOFBuf.KernelWeights[1];
-		mc->KernelWeights[2] = DOFBuf.KernelWeights[2];
-		mc->KernelWeights[3] = DOFBuf.KernelWeights[3];
-		mc->KernelWeights[4] = DOFBuf.KernelWeights[4];
-		mc->KernelWeights[5] = DOFBuf.KernelWeights[5];
-		mc->KernelWeights[6] = DOFBuf.KernelWeights[6];
-		mc->KernelWeights[7] = DOFBuf.KernelWeights[7];
-		mc->KernelWeights[8] = DOFBuf.KernelWeights[8];
-		mc->KernelWeights[9] = DOFBuf.KernelWeights[9];
-		mc->KernelWeights[10] = DOFBuf.KernelWeights[10];
-		mc->KernelWeights[11] = DOFBuf.KernelWeights[11];
-		mc->KernelWeights[12] = DOFBuf.KernelWeights[12];
-		mc->KernelWeights[13] = DOFBuf.KernelWeights[13];
-		mc->KernelWeights[14] = DOFBuf.KernelWeights[14];
-		mc->KernelWeights[15] = DOFBuf.KernelWeights[15];
-		mc->KernelWeights[16] = DOFBuf.KernelWeights[16];
+		for (unsigned int i = 0; i < DOF_BLUR_KERNEL_RADIUS + 1; i++)
+		{
+			mc->KernelWeights[i] = DOFBuf.KernelWeights[DOF_BLUR_KERNEL_RADIUS - i];
+		}
 
   		pImmediateContext->lpVtbl->Unmap(pImmediateContext, (ID3D11Resource *)pcbFractal,0);
 
