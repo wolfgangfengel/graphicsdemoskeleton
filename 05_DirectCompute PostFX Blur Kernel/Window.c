@@ -56,6 +56,8 @@ DEFINE_GUIDW(IID_ID3D11Texture2D,0x6f15aaf2,0xd208,0x4e89,0x9a,0xb4,0x48,0x95,0x
 #include "BlurKernelX.sh"
 #include "BlurKernelY.sh"
 
+#include <math.h> // for exp
+
 //
 // Random number generator
 // see http://www.codeproject.com/KB/recipes/SimpleRNG.aspx
@@ -181,7 +183,7 @@ int EXP(int base, int power)
 
 static float NormalDistributionUnscaled(float X,float Mean,float Variance)
 {
-	return (float)EXP(2, -SQUARE(X - Mean) / (2.0f * Variance));
+	return (float)exp(-SQUARE(X - Mean) / (2.0f * Variance));
 }
 
 //	
@@ -197,7 +199,7 @@ static int CalculateWeights(float KernelRadius, DOF_BUFFER *buffer)
 	float WeightSum = 0.0f;
 	for (INT SampleIndex = 0; SampleIndex <= IntegerKernelRadius; ++SampleIndex)
 	{
-		float Weight = NormalDistributionUnscaled(SampleIndex, 0, ClampedKernelRadius) * 2;
+		float Weight = NormalDistributionUnscaled(SampleIndex, 0, ClampedKernelRadius);
 
 		buffer->KernelWeights[SampleIndex] = Weight;
 		//	Igor: All the samples with non-0 index contribute to the total sum twice as [i] and [-i]
@@ -355,7 +357,12 @@ __declspec( naked )  void __cdecl winmain()
 		float orientation[4*4]; // rotation matrix
 		float zoom[4]; // with three dummy values to 
 		// for the DOF weights
-		float KernelWeights[DOF_BLUR_KERNEL_RADIUS + 1];
+		// unfortunately D3D run-time will allocate with
+		// float KernelWeights[DOF_BLUR_KERNEL_RADIUS_MAX + 1];
+		// 16 x float4 + 1 x float value
+		// with the following it will allocate 17 x float4 but the indexing will work as expected
+		// kind of a waste of memory
+		float KernelWeights[DOF_BLUR_KERNEL_RADIUS_MAX + 1][4];
 	} MainConstantBuffer;
 
 #if defined(_DEBUG)
@@ -367,7 +374,7 @@ __declspec( naked )  void __cdecl winmain()
     Desc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
     Desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
 //	unsigned int SizeOfConstBuffer = sizeof(MainConstantBuffer);
-	Desc.ByteWidth = 208; // ((sizeof(MainConstantBuffer)+15) / 16) * 16; // must be multiple of 16 bytes // 13 x 16 bytes
+	Desc.ByteWidth = ((sizeof(MainConstantBuffer)+15) / 16) * 16; // must be multiple of 16 bytes // 13 x 16 bytes
 #if defined(_DEBUG)
 	hr =
 #endif
@@ -542,7 +549,7 @@ __declspec( naked )  void __cdecl winmain()
 
 		for (unsigned int i = 0; i < DOF_BLUR_KERNEL_RADIUS + 1; i++)
 		{
-			mc->KernelWeights[i] = DOFBuf.KernelWeights[DOF_BLUR_KERNEL_RADIUS - i];
+			mc->KernelWeights[i][0] = DOFBuf.KernelWeights[i];
 		}
 
   		pImmediateContext->lpVtbl->Unmap(pImmediateContext, (ID3D11Resource *)pcbFractal,0);

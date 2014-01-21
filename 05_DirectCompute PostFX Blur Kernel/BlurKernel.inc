@@ -37,8 +37,12 @@ cbuffer cbCS : register( b0 )
 	float4 c_diffuse : packoffset(c1);	// diffuse shading color
 	float4 c_mu : packoffset(c2);		// julia quaternion parameter
 	float4x4 rotation : packoffset(c3);
-	float zoom : packoffset(c7); // zoom with dummy offset 
-	float KernelWeights[DOF_BLUR_KERNEL_RADIUS + 1] : packoffset(c8);
+	float4 zoom : packoffset(c7); // zoom with dummy offset 
+	
+	// when you use
+	//	float KernelWeights[DOF_BLUR_KERNEL_RADIUS_MAX + 1];
+	// it indexes into the x channels of float4's
+	float4 KernelWeights[DOF_BLUR_KERNEL_RADIUS_MAX + 1] : packoffset(c8);
 };
 
 
@@ -121,14 +125,14 @@ struct CS_Output
 //--------------------------------------------------------------------------------------
 CS_Output ComputeFilterKernel(int iPixelOffset, int iLineOffset)
 {
-
+/*
 	float KernelWeights[5];
-	KernelWeights[0] = 0.00854818523;
-	KernelWeights[1] = 0.0232363734;
+	KernelWeights[4] = 0.00854818523;
+	KernelWeights[3] = 0.0232363734;
 	KernelWeights[2] = 0.0631630123;
-	KernelWeights[3] = 0.171694890;
-	KernelWeights[4] = 0.466715068;
-
+	KernelWeights[1] = 0.171694890;
+	KernelWeights[0] = 0.466715068;
+*/
 	CS_Output O;
 	int i, j;
 	float fWeightSum[PIXELS_PER_THREAD];
@@ -185,7 +189,7 @@ CS_Output ComputeFilterKernel(int iPixelOffset, int iLineOffset)
 	[unroll]
 	for (i = 0; i < PIXELS_PER_THREAD; ++i)
 	{
-		O.fOutput[i] /= fWeightSum[i];
+//		O.fOutput[i] /= fWeightSum[i];
 	}
 
 	return O;
