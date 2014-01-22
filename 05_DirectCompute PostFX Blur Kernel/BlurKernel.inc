@@ -46,9 +46,6 @@ cbuffer cbCS : register( b0 )
 };
 
 
-
-
-
 #define KERNEL_RADIUS DOF_BLUR_KERNEL_RADIUS
 
 //-----------------------------------------------------------------------------------------
@@ -125,14 +122,6 @@ struct CS_Output
 //--------------------------------------------------------------------------------------
 CS_Output ComputeFilterKernel(int iPixelOffset, int iLineOffset)
 {
-/*
-	float KernelWeights[5];
-	KernelWeights[4] = 0.00854818523;
-	KernelWeights[3] = 0.0232363734;
-	KernelWeights[2] = 0.0631630123;
-	KernelWeights[1] = 0.171694890;
-	KernelWeights[0] = 0.466715068;
-*/
 	CS_Output O;
 	int i, j;
 	float fWeightSum[PIXELS_PER_THREAD];

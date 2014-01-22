@@ -31,7 +31,10 @@ cbuffer cbCS : register( b0 )
 	float4x4 rotation : packoffset(c3);
 	float zoom : packoffset(c7);
 	// not used here 
-	//float KernelWeights[DOF_BLUR_KERNEL_RADIUS + 1] : packoffset(c8);
+	// when you use
+	//	float KernelWeights[DOF_BLUR_KERNEL_RADIUS_MAX + 1];
+	// it indexes into the x channels of float4's
+	// float4 KernelWeights[DOF_BLUR_KERNEL_RADIUS_MAX + 1] : packoffset(c8);
 
 };
 

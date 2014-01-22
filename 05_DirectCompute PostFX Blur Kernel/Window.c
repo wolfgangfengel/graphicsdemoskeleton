@@ -187,7 +187,7 @@ static float NormalDistributionUnscaled(float X,float Mean,float Variance)
 }
 
 //	
-static int CalculateWeights(float KernelRadius, DOF_BUFFER *buffer)
+static void CalculateWeights(float KernelRadius, DOF_BUFFER *buffer)
 {
 	const unsigned int DELTA = 1;
 
@@ -212,8 +212,6 @@ static int CalculateWeights(float KernelRadius, DOF_BUFFER *buffer)
 	{
 		buffer->KernelWeights[SampleIndex] = buffer->KernelWeights[SampleIndex] * InvWeightSum;
 	}
-
-	return IntegerKernelRadius;
 }
 
 
