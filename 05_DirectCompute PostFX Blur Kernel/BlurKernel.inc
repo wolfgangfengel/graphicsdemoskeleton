@@ -17,7 +17,7 @@
 #define	DOF_BLUR_KERNEL_RADIUS_MAX 16
 
 // this needs to be the same as on the application level 
-#define DOF_BLUR_KERNEL_RADIUS 4
+#define DOF_BLUR_KERNEL_RADIUS 8
 
 #if	DOF_BLUR_KERNEL_RADIUS > DOF_BLUR_KERNEL_RADIUS_MAX
 Error.
@@ -122,32 +122,20 @@ struct CS_Output
 //--------------------------------------------------------------------------------------
 CS_Output ComputeFilterKernel(int iPixelOffset, int iLineOffset)
 {
-	CS_Output O;
-	int i, j;
-	float fWeightSum[PIXELS_PER_THREAD];
+	CS_Output O;  int i, j;  
 	float4 f4Temp[PIXELS_PER_THREAD];
 
-	// Prime the GPRs and clean accumulators
-	[unroll]
-	for (i = 0; i < PIXELS_PER_THREAD; ++i)
-	{
-		f4Temp[i] = ReadFromLDS(iLineOffset, iPixelOffset + i);
-		O.fOutput[i] = float4(0.0f, 0.0f, 0.0f, 0.0f);
-		fWeightSum[i] = 0.0f;
+	[unroll] // Prime the GPRs and clean accumulators
+	for (i = 0; i < PIXELS_PER_THREAD; ++i) {
+		f4Temp[i] = ReadFromLDS(iLineOffset, iPixelOffset + i); // read four float4 each holding a color value
+		O.fOutput[i] = float4(0.0f, 0.0f, 0.0f, 0.0f); // clearing output to black
 	}
+	iPixelOffset += PIXELS_PER_THREAD; // Increment the LDS offset by PIXELS_PER_THREAD
 
-	// Increment the LDS offset by PIXELS_PER_THREAD
-	iPixelOffset += PIXELS_PER_THREAD;
-
-	// Run through the kernel
-	[unroll]
-	// 0..8
-	for (j = 0; j < KERNEL_DIAMETER; ++j)
-	{
-		// Perform kernel step for PIXELS_PER_THREAD pixels
-		[unroll]
-		for (i = 0; i < PIXELS_PER_THREAD; ++i)
-		{
+	[unroll] 	// 0..8
+	for (j = 0; j < KERNEL_DIAMETER; ++j) {
+		[unroll] // Perform kernel step for PIXELS_PER_THREAD pixels
+		for (i = 0; i < PIXELS_PER_THREAD; ++i) {
 			// indices into constant buffer weights
 			// first run abs(0 - 4) = 4
 			// first run abs(1 - 4) = 3
@@ -160,19 +148,14 @@ CS_Output ComputeFilterKernel(int iPixelOffset, int iLineOffset)
 			// first run abs(8 - 4) = 4
 			float w = KernelWeights[abs(j - KERNEL_RADIUS)];
 			O.fOutput[i] += w * f4Temp[i];
-			fWeightSum[i] += w;
 		}
-
 		// Shift data in the temp registers (due to [unroll] of this and main loop
 		// this is essentially register renaming).
 		[unroll]
-		for (i = 0; i < PIXELS_PER_THREAD - 1; ++i)
-		{
+		for (i = 0; i < PIXELS_PER_THREAD - 1; ++i) {
 			f4Temp[i] = f4Temp[i + 1];
 		}
-
 		f4Temp[i] = ReadFromLDS(iLineOffset, iPixelOffset + j);
 	}
-
 	return O;
 }

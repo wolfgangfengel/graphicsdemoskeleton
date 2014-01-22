@@ -47,7 +47,7 @@ DEFINE_GUIDW(IID_ID3D11Texture2D,0x6f15aaf2,0xd208,0x4e89,0x9a,0xb4,0x48,0x95,0x
 
 // for the blur kernel filter
 #define DOF_BLUR_KERNEL_RADIUS_MAX 16
-#define DOF_BLUR_KERNEL_RADIUS 4 
+#define DOF_BLUR_KERNEL_RADIUS 8 
 #define RUN_SIZE	128 	//	Pixels to process per line per kernel invocation
 #define RUN_LINES	2  		//	Lines to process per kernel invocation
 
