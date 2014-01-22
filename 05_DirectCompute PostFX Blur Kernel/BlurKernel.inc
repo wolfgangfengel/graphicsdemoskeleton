@@ -159,7 +159,7 @@ CS_Output ComputeFilterKernel(int iPixelOffset, int iLineOffset)
 		[unroll]
 		for (i = 0; i < PIXELS_PER_THREAD; ++i)
 		{
-			// indices into contanst buffer weights
+			// indices into constant buffer weights
 			// first run abs(0 - 4) = 4
 			// first run abs(1 - 4) = 3
 			// first run abs(2 - 4) = 2
@@ -183,13 +183,6 @@ CS_Output ComputeFilterKernel(int iPixelOffset, int iLineOffset)
 		}
 
 		f4Temp[i] = ReadFromLDS(iLineOffset, iPixelOffset + j);
-	}
-
-	// Perform normalization
-	[unroll]
-	for (i = 0; i < PIXELS_PER_THREAD; ++i)
-	{
-//		O.fOutput[i] /= fWeightSum[i];
 	}
 
 	return O;

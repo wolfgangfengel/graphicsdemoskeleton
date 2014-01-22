@@ -56,8 +56,6 @@ DEFINE_GUIDW(IID_ID3D11Texture2D,0x6f15aaf2,0xd208,0x4e89,0x9a,0xb4,0x48,0x95,0x
 #include "BlurKernelX.sh"
 #include "BlurKernelY.sh"
 
-#include <math.h> // for exp
-
 //
 // Random number generator
 // see http://www.codeproject.com/KB/recipes/SimpleRNG.aspx
@@ -173,9 +171,11 @@ typedef struct
 * @return The value of the normal distribution at X. (unscaled)
 */
 
-int EXP(int base, int power) 
+#define e 2.718281828
+
+float EXP(float base, float power)
 {
-	int result = base;
+	float result = base;
 	for (int ii = 0; ii<power - 1; ii++)
 		result *= base;
 	return result;
@@ -183,7 +183,7 @@ int EXP(int base, int power)
 
 static float NormalDistributionUnscaled(float X,float Mean,float Variance)
 {
-	return (float)exp(-SQUARE(X - Mean) / (2.0f * Variance));
+	return EXP(e, -SQUARE(X - Mean) / (2.0f * Variance));
 }
 
 //	
@@ -212,18 +212,7 @@ static int CalculateWeights(float KernelRadius, DOF_BUFFER *buffer)
 	{
 		buffer->KernelWeights[SampleIndex] = buffer->KernelWeights[SampleIndex] * InvWeightSum;
 	}
-	/*
-	WeightSum = 0;
-	for (INT SampleIndex = 0; SampleIndex <= IntegerKernelRadius; ++SampleIndex)
-	{
-		WeightSum += buffer->KernelWeights[SampleIndex].w;
-	}
 
-	for (INT SampleIndex = 1; SampleIndex <= IntegerKernelRadius; ++SampleIndex)
-	{
-		WeightSum += buffer->KernelWeights[SampleIndex].w;
-	}
-	*/
 	return IntegerKernelRadius;
 }
 
