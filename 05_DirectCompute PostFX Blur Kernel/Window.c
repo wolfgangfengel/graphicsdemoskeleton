@@ -29,7 +29,6 @@ DEFINE_GUIDW(IID_ID3D11Texture2D,0x6f15aaf2,0xd208,0x4e89,0x9a,0xb4,0x48,0x95,0x
 #define MIN(X,Y) ((X) < (Y) ? (X) : (Y))
 //#define CEIL_DIV(x,y) (((x) + (y) - 1) / (y))
 #define CEIL(VARIABLE) ( (VARIABLE - (int)VARIABLE)==0 ? (int)VARIABLE : (int)VARIABLE+1 )
-#define SQUARE(a) a*a
 
 // define the size of the window
 #define THREADSX 16			// number of threads in the thread group used in the compute shader
@@ -173,9 +172,22 @@ typedef struct
 * @return The value of the normal distribution at X. (unscaled)
 */
 
+#define e 2.718281828
+
+float EXP(float base, float power)
+{
+	float result = base;
+	for (int ii = 0; ii < power - 1; ii++)
+		result *= base;
+	return result;
+}
+
+
 static float NormalDistributionUnscaled(float X,float Mean,float Variance)
 {
-	return exp(-SQUARE(X - Mean) / (2.0 * Variance));
+//	return EXP(e, -((X - Mean) * (X - Mean)) / (2.0 * Variance));
+	return exp(-((X - Mean) * (X - Mean)) / (2.0 * Variance));
+
 }
 
 //	
