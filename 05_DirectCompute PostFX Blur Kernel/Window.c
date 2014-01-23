@@ -20,6 +20,8 @@ DEFINE_GUIDW(IID_ID3D11Texture2D,0x6f15aaf2,0xd208,0x4e89,0x9a,0xb4,0x48,0x95,0x
 #include <d3d11.h>
 #include <d3dcompiler.h>
 
+#include <math.h> // for exp
+
 // Macros
 // Macros are error-prone because they rely on textual substitution and do not perform type-checking.
 #define CLAMP(n,min,max)                        ((n < min) ? min : (n > max) ? max : n)
@@ -47,7 +49,7 @@ DEFINE_GUIDW(IID_ID3D11Texture2D,0x6f15aaf2,0xd208,0x4e89,0x9a,0xb4,0x48,0x95,0x
 
 // for the blur kernel filter
 #define DOF_BLUR_KERNEL_RADIUS_MAX 16
-#define DOF_BLUR_KERNEL_RADIUS 8 
+#define DOF_BLUR_KERNEL_RADIUS 8
 #define RUN_SIZE	128 	//	Pixels to process per line per kernel invocation
 #define RUN_LINES	2  		//	Lines to process per kernel invocation
 
@@ -171,19 +173,9 @@ typedef struct
 * @return The value of the normal distribution at X. (unscaled)
 */
 
-#define e 2.718281828
-
-float EXP(float base, float power)
-{
-	float result = base;
-	for (int ii = 0; ii<power - 1; ii++)
-		result *= base;
-	return result;
-}
-
 static float NormalDistributionUnscaled(float X,float Mean,float Variance)
 {
-	return EXP(e, -SQUARE(X - Mean) / (2.0f * Variance));
+	return exp(-SQUARE(X - Mean) / (2.0 * Variance));
 }
 
 //	
@@ -207,7 +199,7 @@ static void CalculateWeights(float KernelRadius, DOF_BUFFER *buffer)
 	}
 
 	// Normalize blur weights.
-	float InvWeightSum = 1.0f / WeightSum;
+	float InvWeightSum = 1.0f / (WeightSum);
 	for (INT SampleIndex = 0; SampleIndex <= IntegerKernelRadius; ++SampleIndex)
 	{
 		buffer->KernelWeights[SampleIndex] = buffer->KernelWeights[SampleIndex] * InvWeightSum;
