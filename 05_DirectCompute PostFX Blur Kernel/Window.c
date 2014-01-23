@@ -171,18 +171,6 @@ typedef struct
 * @param Variance - The normal distribution's variance.
 * @return The value of the normal distribution at X. (unscaled)
 */
-
-#define e 2.718281828
-
-float EXP(float base, float power)
-{
-	float result = base;
-	for (int ii = 0; ii < power - 1; ii++)
-		result *= base;
-	return result;
-}
-
-
 static float NormalDistributionUnscaled(float X,float Mean,float Variance)
 {
 //	return EXP(e, -((X - Mean) * (X - Mean)) / (2.0 * Variance));
