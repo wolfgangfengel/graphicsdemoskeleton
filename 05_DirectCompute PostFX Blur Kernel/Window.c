@@ -20,8 +20,6 @@ DEFINE_GUIDW(IID_ID3D11Texture2D,0x6f15aaf2,0xd208,0x4e89,0x9a,0xb4,0x48,0x95,0x
 #include <d3d11.h>
 #include <d3dcompiler.h>
 
-#include <math.h> // for exp
-
 // Macros
 // Macros are error-prone because they rely on textual substitution and do not perform type-checking.
 #define CLAMP(n,min,max)                        ((n < min) ? min : (n > max) ? max : n)
@@ -161,7 +159,19 @@ typedef struct
 	float	KernelWeights[DOF_BLUR_KERNEL_RADIUS_MAX + 1];
 }DOF_BUFFER;
 
-//	Igor: This should be synchronous to the NormalDistributionUnscaled in the SceneFilterRendering.cpp
+// http://stackoverflow.com/questions/7824239/exp-function-using-c
+double my_exp(double x)
+{
+	double sum = 1.0 + x;
+	double term = x;                 // term for k = 1 is just x
+	for (int k = 2; k < 50; k++)
+	{
+		term = term * x / (double) k; // term[k] = term[k-1] * x / k
+		sum = sum + term;
+	}
+	return sum;
+}
+
 /**
 * Evaluates a normal distribution PDF at given X.
 * This function misses the math for scaling the result (faster, not needed if the resulting values are renormalized).
@@ -172,9 +182,8 @@ typedef struct
 */
 static float NormalDistributionUnscaled(float X,float Mean,float Variance)
 {
-//	return EXP(e, -((X - Mean) * (X - Mean)) / (2.0 * Variance));
-	return exp(-((X - Mean) * (X - Mean)) / (2.0 * Variance));
-
+//	return exp(-((X - Mean) * (X - Mean)) / (2.0 * Variance));
+	return (float)my_exp(-((X - Mean) * (X - Mean)) / (2.0 * Variance));
 }
 
 //	
@@ -190,7 +199,7 @@ static void CalculateWeights(float KernelRadius, DOF_BUFFER *buffer)
 	float WeightSum = 0.0f;
 	for (INT SampleIndex = 0; SampleIndex <= IntegerKernelRadius; ++SampleIndex)
 	{
-		float Weight = NormalDistributionUnscaled(SampleIndex, 0, ClampedKernelRadius);
+		float Weight = NormalDistributionUnscaled((float) SampleIndex, (float)0, (float) ClampedKernelRadius);
 
 		buffer->KernelWeights[SampleIndex] = Weight;
 		//	Igor: All the samples with non-0 index contribute to the total sum twice as [i] and [-i]
@@ -530,7 +539,7 @@ __declspec( naked )  void __cdecl winmain()
 
 		for (unsigned int i = 0; i < DOF_BLUR_KERNEL_RADIUS + 1; i++)
 		{
-			mc->KernelWeights[i][0] = DOFBuf.KernelWeights[DOF_BLUR_KERNEL_RADIUS - i];
+			mc->KernelWeights[i][0] = DOFBuf.KernelWeights[i];
 		}
 
   		pImmediateContext->lpVtbl->Unmap(pImmediateContext, (ID3D11Resource *)pcbFractal,0);
@@ -631,7 +640,7 @@ __declspec( naked )  void __cdecl winmain()
 
 		for (unsigned int i = 0; i < DOF_BLUR_KERNEL_RADIUS + 1; i++)
 		{
-			mc->KernelWeights[i][0] = DOFBuf.KernelWeights[DOF_BLUR_KERNEL_RADIUS - i];
+			mc->KernelWeights[i][0] = DOFBuf.KernelWeights[i];
 		}
 
 
