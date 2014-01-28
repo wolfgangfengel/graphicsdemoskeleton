@@ -54,8 +54,7 @@ DEFINE_GUIDW(IID_ID3D11Texture2D,0x6f15aaf2,0xd208,0x4e89,0x9a,0xb4,0x48,0x95,0x
 
 
 #include "qjulia4D.sh"
-#include "BlurKernelX.sh"
-#include "BlurKernelY.sh"
+#include "BlurKernel.sh"
 
 //
 // Random number generator
@@ -257,8 +256,8 @@ __declspec( naked )  void __cdecl winmain()
 	// compile the compute shaders
 	//
 	ID3D11ComputeShader *pCompiledComputeShader;
-	ID3D11ComputeShader *pCompiledCSFilterXComputeShader;
-	ID3D11ComputeShader *pCompiledCSFilterYComputeShader;
+	ID3D11ComputeShader *pCompiledCSFilterComputeShader;
+	//ID3D11ComputeShader *pCompiledCSFilterYComputeShader;
 
 	static DOF_BUFFER DOFBuf;
 
@@ -438,11 +437,13 @@ __declspec( naked )  void __cdecl winmain()
 #if defined(_DEBUG)
 	hr =
 #endif
-		pd3dDevice->lpVtbl->CreateComputeShader(pd3dDevice, g_CSFilterX, sizeof(g_CSFilterX), NULL, &pCompiledCSFilterXComputeShader);
+		pd3dDevice->lpVtbl->CreateComputeShader(pd3dDevice, g_CSFilter, sizeof(g_CSFilter), NULL, &pCompiledCSFilterComputeShader);
+	/*
 #if defined(_DEBUG)
 	hr =
 #endif
 		pd3dDevice->lpVtbl->CreateComputeShader(pd3dDevice, g_CSFilterY, sizeof(g_CSFilterY), NULL, &pCompiledCSFilterYComputeShader);
+		*/
 
 #if defined(_DEBUG)
 	if (hr != S_OK)
@@ -483,11 +484,12 @@ __declspec( naked )  void __cdecl winmain()
   	    UpdateColor( &ColorT, ColorA, ColorB );
    		Interpolate(ColorC, ColorT, ColorA, ColorB );
 
+		static MainConstantBuffer* mc;
+
 		// Fill constant buffer
 		static D3D11_MAPPED_SUBRESOURCE msr;
   		pImmediateContext->lpVtbl->Map(pImmediateContext,(ID3D11Resource *)pcbFractal, 0, D3D11_MAP_WRITE_DISCARD, 0,  &msr);
 
-		static MainConstantBuffer* mc;
 		mc = msr.pData;
 
 		// this is a continous constant buffer
@@ -528,7 +530,7 @@ __declspec( naked )  void __cdecl winmain()
 
 		for (unsigned int i = 0; i < DOF_BLUR_KERNEL_RADIUS + 1; i++)
 		{
-			mc->KernelWeights[i][0] = DOFBuf.KernelWeights[i];
+			mc->KernelWeights[i][0] = DOFBuf.KernelWeights[DOF_BLUR_KERNEL_RADIUS - i];
 		}
 
   		pImmediateContext->lpVtbl->Unmap(pImmediateContext, (ID3D11Resource *)pcbFractal,0);
@@ -554,7 +556,7 @@ __declspec( naked )  void __cdecl winmain()
 		// run blur kernel in X
 		//
 		// Set compute shader
-		pImmediateContext->lpVtbl->CSSetShader(pImmediateContext, pCompiledCSFilterXComputeShader, NULL, 0);
+		pImmediateContext->lpVtbl->CSSetShader(pImmediateContext, pCompiledCSFilterComputeShader, NULL, 0);
 
 		// For CS output -> write into temporary texture
 		pImmediateContext->lpVtbl->CSSetUnorderedAccessViews(pImmediateContext, 0, 1, &pUAVTempTexture, NULL);
@@ -578,12 +580,65 @@ __declspec( naked )  void __cdecl winmain()
 		pImmediateContext->lpVtbl->CSSetShaderResources(pImmediateContext, 0, 1, &pNull);
 #endif
 
-
+		
 		//
 		// run blur kernel in Y
 		//
+		
+		// switch on Y direction in constant buffer
+		// Fill constant buffer
+		pImmediateContext->lpVtbl->Map(pImmediateContext, (ID3D11Resource *)pcbFractal, 0, D3D11_MAP_WRITE_DISCARD, 0, &msr);
+
+
+		mc = msr.pData;
+
+
+		// this is a continous constant buffer
+		// that means each value is aligned in the buffer one after each other without any spaces
+		// the layout need to be in the same order as the constant buffer struct in the shader
+		mc->c_height = WINHEIGHT;
+		mc->c_width = WINWIDTH;
+		mc->epsilon = Epsilon;
+		mc->selfShadow = selfShadow;
+		mc->diffuse[0] = ColorC[0];
+		mc->diffuse[1] = ColorC[1];
+		mc->diffuse[2] = ColorC[2];
+		mc->diffuse[3] = ColorC[3];
+		mc->mu[0] = MuC[0];
+		mc->mu[1] = MuC[1];
+		mc->mu[2] = MuC[2];
+		mc->mu[3] = MuC[3];
+		mc->orientation[0] = 1.0;
+		//		mc->orientation[1] = 0.0;
+		//		mc->orientation[2] = 0.0;
+		//		mc->orientation[3] = 0.0;
+		//		mc->orientation[4] = 0.0;
+		mc->orientation[5] = 1.0;
+		//		mc->orientation[6] = 0.0;
+		//		mc->orientation[7] = 0.0;
+		//		mc->orientation[8] = 0.0;
+		//		mc->orientation[9] = 0.0;
+		mc->orientation[10] = 1.0;
+		//		mc->orientation[11] = 0.0;
+		//		mc->orientation[12] = 0.0;
+		//		mc->orientation[13] = 0.0;
+		//		mc->orientation[14] = 0.0;
+		mc->orientation[15] = 1.0;
+		mc->zoom[0] = zoom;
+		mc->zoom[1] = 1.0; // this is the switch ... sets the static variable in the shader
+		mc->zoom[2] = 0.0;
+		mc->zoom[3] = 0.0;
+
+		for (unsigned int i = 0; i < DOF_BLUR_KERNEL_RADIUS + 1; i++)
+		{
+			mc->KernelWeights[i][0] = DOFBuf.KernelWeights[DOF_BLUR_KERNEL_RADIUS - i];
+		}
+
+
+		pImmediateContext->lpVtbl->Unmap(pImmediateContext, (ID3D11Resource *)pcbFractal, 0);
+
 		// Set compute shader
-		pImmediateContext->lpVtbl->CSSetShader(pImmediateContext, pCompiledCSFilterYComputeShader, NULL, 0);
+		pImmediateContext->lpVtbl->CSSetShader(pImmediateContext, pCompiledCSFilterComputeShader, NULL, 0);
 
 		// For CS output -> write into the back buffer
 		pImmediateContext->lpVtbl->CSSetUnorderedAccessViews(pImmediateContext, 0, 1, &pUAVBackbuffer, NULL);
@@ -604,7 +659,7 @@ __declspec( naked )  void __cdecl winmain()
 #if defined(WELLBEHAVIOUR)
 		pImmediateContext->lpVtbl->CSSetShaderResources(pImmediateContext, 0, 1, &pNull);
 #endif
-
+		
 		// make it visible
 		pSwapChain->lpVtbl->Present(pSwapChain, 0, 0);
 	}
@@ -622,8 +677,8 @@ __declspec( naked )  void __cdecl winmain()
 		pSRVTempTexture->lpVtbl->Release(pSRVTempTexture);
 		pSRVBackBuffer->lpVtbl->Release(pSRVBackBuffer);
 		pCompiledComputeShader->lpVtbl->Release(pCompiledComputeShader);
-		pCompiledCSFilterXComputeShader->lpVtbl->Release(pCompiledCSFilterXComputeShader);
-		pCompiledCSFilterYComputeShader->lpVtbl->Release(pCompiledCSFilterYComputeShader);
+		pCompiledCSFilterComputeShader->lpVtbl->Release(pCompiledCSFilterComputeShader);
+//		pCompiledCSFilterYComputeShader->lpVtbl->Release(pCompiledCSFilterYComputeShader);
 #endif
 
 #if 0 
