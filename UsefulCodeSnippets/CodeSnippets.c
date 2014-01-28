@@ -96,3 +96,36 @@ static float GetUniform()
     // The result is strictly between 0 and 1.
     return (u) * 2.328306435454494e-10 * 2.0;
 }
+
+
+
+// some simplified C lib functions:
+// http://stackoverflow.com/questions/7824239/exp-function-using-c
+double factorial(const int k)
+{
+    int prod = 1;
+    for(int i=1; i<=k; i++)
+        prod = i * prod;
+    return prod;
+}
+
+double power(const double base, const int exponent)
+{
+    double result = 1;
+    for(int i=1; i<=exponent; i++)
+        result = result * base;
+    return result;
+}
+
+
+double my_exp(double x)
+{
+    double sum = 1.0 + x;
+    double term = x;                 // term for k = 1 is just x
+    for (int k = 2; k < 50; k++)
+    {
+        term = term * x / (double)k; // term[k] = term[k-1] * x / k
+        sum = sum + term;
+    }
+    return sum;
+}
