@@ -121,14 +121,6 @@ struct CS_Output
 //--------------------------------------------------------------------------------------
 CS_Output ComputeFilterKernel(int iPixelOffset, int iLineOffset)
 {
-	/*
-	float KernelWeights[5];
-	KernelWeights[0] = 0.00854818523;
-	KernelWeights[1] = 0.0232363734;
-	KernelWeights[2] = 0.0631630123;
-	KernelWeights[3] = 0.171694890;
-	KernelWeights[4] = 0.466715068;
-*/
 	CS_Output O;
 	int i, j;
 	float fWeightSum[PIXELS_PER_THREAD];
@@ -155,7 +147,7 @@ CS_Output ComputeFilterKernel(int iPixelOffset, int iLineOffset)
 		[unroll]
 		for (i = 0; i < PIXELS_PER_THREAD; ++i)
 		{
-			// indices into contanst buffer weights
+			// indices into contanst buffer weights in case of a 4 tap filter
 			// first run abs(0 - 4) = 4
 			// first run abs(1 - 4) = 3
 			// first run abs(2 - 4) = 2
@@ -180,13 +172,6 @@ CS_Output ComputeFilterKernel(int iPixelOffset, int iLineOffset)
 
 		f4Temp[i] = ReadFromLDS(iLineOffset, iPixelOffset + j);
 	}
-
-	// Perform normalization
-//	[unroll]
-//	for (i = 0; i < PIXELS_PER_THREAD; ++i)
-//	{
-//		O.fOutput[i] /= fWeightSum[i];
-//	}
 
 	return O;
 }

@@ -28,6 +28,9 @@ DEFINE_GUIDW(IID_ID3D11Texture2D,0x6f15aaf2,0xd208,0x4e89,0x9a,0xb4,0x48,0x95,0x
 //#define CEIL_DIV(x,y) (((x) + (y) - 1) / (y))
 #define CEIL(VARIABLE) ( (VARIABLE - (int)VARIABLE)==0 ? (int)VARIABLE : (int)VARIABLE+1 )
 
+typedef unsigned int uint32;
+typedef unsigned char unit8;
+
 // define the size of the window
 #define THREADSX 16			// number of threads in the thread group used in the compute shader
 #define THREADSY 16			// number of threads in the thread group used in the compute shader
@@ -158,6 +161,30 @@ typedef struct
 {
 	float	KernelWeights[DOF_BLUR_KERNEL_RADIUS_MAX + 1];
 }DOF_BUFFER;
+
+// this is a memcpy that is not very fast
+void memcopy32(void* dest, void* src, int size)
+{
+	unit8 *pdest = (unit8*)dest;
+	unit8 *psrc = (unit8*)src;
+
+	int loops = (size / sizeof(uint32));
+	for (int index = 0; index < loops; ++index)
+	{
+		*((uint32*)pdest) = *((uint32*)psrc);
+		pdest += sizeof(uint32);
+		psrc += sizeof(uint32);
+	}
+/*
+	loops = (size % sizeof(uint32));
+	for (int index = 0; index < loops; ++index)
+	{
+		*pdest = *psrc;
+		++pdest;
+		++psrc;
+	}
+*/
+}
 
 // http://stackoverflow.com/questions/7824239/exp-function-using-c
 double my_exp(double x)
@@ -357,10 +384,9 @@ __declspec( naked )  void __cdecl winmain()
 #endif
 
 	// constant buffer for Julia4D
-    Desc.Usage = D3D11_USAGE_DYNAMIC;
+	Desc.Usage = D3D11_USAGE_DYNAMIC;
     Desc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
     Desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-//	unsigned int SizeOfConstBuffer = sizeof(MainConstantBuffer);
 	Desc.ByteWidth = ((sizeof(MainConstantBuffer)+15) / 16) * 16; // must be multiple of 16 bytes // 13 x 16 bytes
 #if defined(_DEBUG)
 	hr =
@@ -447,12 +473,6 @@ __declspec( naked )  void __cdecl winmain()
 	hr =
 #endif
 		pd3dDevice->lpVtbl->CreateComputeShader(pd3dDevice, g_CSFilter, sizeof(g_CSFilter), NULL, &pCompiledCSFilterComputeShader);
-	/*
-#if defined(_DEBUG)
-	hr =
-#endif
-		pd3dDevice->lpVtbl->CreateComputeShader(pd3dDevice, g_CSFilterY, sizeof(g_CSFilterY), NULL, &pCompiledCSFilterYComputeShader);
-		*/
 
 #if defined(_DEBUG)
 	if (hr != S_OK)
@@ -493,54 +513,55 @@ __declspec( naked )  void __cdecl winmain()
   	    UpdateColor( &ColorT, ColorA, ColorB );
    		Interpolate(ColorC, ColorT, ColorA, ColorB );
 
-		static MainConstantBuffer* mc;
-
-		// Fill constant buffer
-		static D3D11_MAPPED_SUBRESOURCE msr;
-  		pImmediateContext->lpVtbl->Map(pImmediateContext,(ID3D11Resource *)pcbFractal, 0, D3D11_MAP_WRITE_DISCARD, 0,  &msr);
-
-		mc = msr.pData;
+		static MainConstantBuffer mc;
 
 		// this is a continous constant buffer
 		// that means each value is aligned in the buffer one after each other without any spaces
 		// the layout need to be in the same order as the constant buffer struct in the shader
-    	mc->c_height = WINHEIGHT;
-		mc->c_width = WINWIDTH;
-		mc->epsilon = Epsilon;
-		mc->selfShadow = selfShadow;
-		mc->diffuse[0] = ColorC[0];
-    	mc->diffuse[1] = ColorC[1];
-    	mc->diffuse[2] = ColorC[2];
-    	mc->diffuse[3] = ColorC[3];
-    	mc->mu[0] = MuC[0];
-    	mc->mu[1] = MuC[1];
-    	mc->mu[2] = MuC[2];
-    	mc->mu[3] = MuC[3];
-		mc->orientation[0] = 1.0;
-//		mc->orientation[1] = 0.0;
-//		mc->orientation[2] = 0.0;
-//		mc->orientation[3] = 0.0;
-//		mc->orientation[4] = 0.0;
-		mc->orientation[5] = 1.0;
-//		mc->orientation[6] = 0.0;
-//		mc->orientation[7] = 0.0;
-//		mc->orientation[8] = 0.0;
-//		mc->orientation[9] = 0.0;
-		mc->orientation[10] = 1.0;
-//		mc->orientation[11] = 0.0;
-//		mc->orientation[12] = 0.0;
-//		mc->orientation[13] = 0.0;
-//		mc->orientation[14] = 0.0;
-		mc->orientation[15] = 1.0;
-    	mc->zoom[0] = zoom;
-		mc->zoom[1] = 0.0;
-		mc->zoom[2] = 0.0;
-		mc->zoom[3] = 0.0;
+		mc.c_height = WINHEIGHT;
+		mc.c_width = WINWIDTH;
+		mc.epsilon = Epsilon;
+		mc.selfShadow = selfShadow;
+		mc.diffuse[0] = ColorC[0];
+		mc.diffuse[1] = ColorC[1];
+		mc.diffuse[2] = ColorC[2];
+		mc.diffuse[3] = ColorC[3];
+		mc.mu[0] = MuC[0];
+		mc.mu[1] = MuC[1];
+		mc.mu[2] = MuC[2];
+		mc.mu[3] = MuC[3];
+		mc.orientation[0] = 1.0;
+		//		mc->orientation[1] = 0.0;
+		//		mc->orientation[2] = 0.0;
+		//		mc->orientation[3] = 0.0;
+		//		mc->orientation[4] = 0.0;
+		mc.orientation[5] = 1.0;
+		//		mc->orientation[6] = 0.0;
+		//		mc->orientation[7] = 0.0;
+		//		mc->orientation[8] = 0.0;
+		//		mc->orientation[9] = 0.0;
+		mc.orientation[10] = 1.0;
+		//		mc->orientation[11] = 0.0;
+		//		mc->orientation[12] = 0.0;
+		//		mc->orientation[13] = 0.0;
+		//		mc->orientation[14] = 0.0;
+		mc.orientation[15] = 1.0;
+		mc.zoom[0] = zoom;
+		mc.zoom[1] = 0.0;
+		mc.zoom[2] = 0.0;
+		mc.zoom[3] = 0.0;
 
 		for (unsigned int i = 0; i < DOF_BLUR_KERNEL_RADIUS + 1; i++)
 		{
-			mc->KernelWeights[i][0] = DOFBuf.KernelWeights[i];
+			mc.KernelWeights[i][0] = DOFBuf.KernelWeights[i];
 		}
+
+		// Fill constant buffer
+		static D3D11_MAPPED_SUBRESOURCE msr;
+		pImmediateContext->lpVtbl->Map(pImmediateContext, (ID3D11Resource *)pcbFractal, 0, D3D11_MAP_WRITE_DISCARD, 0, &msr);
+
+		// copy onto GPU memory
+		memcopy32(msr.pData, &mc, sizeof(mc));
 
   		pImmediateContext->lpVtbl->Unmap(pImmediateContext, (ID3D11Resource *)pcbFractal,0);
 
@@ -598,51 +619,9 @@ __declspec( naked )  void __cdecl winmain()
 		// Fill constant buffer
 		pImmediateContext->lpVtbl->Map(pImmediateContext, (ID3D11Resource *)pcbFractal, 0, D3D11_MAP_WRITE_DISCARD, 0, &msr);
 
-
-		mc = msr.pData;
-
-
-		// this is a continous constant buffer
-		// that means each value is aligned in the buffer one after each other without any spaces
-		// the layout need to be in the same order as the constant buffer struct in the shader
-		mc->c_height = WINHEIGHT;
-		mc->c_width = WINWIDTH;
-		mc->epsilon = Epsilon;
-		mc->selfShadow = selfShadow;
-		mc->diffuse[0] = ColorC[0];
-		mc->diffuse[1] = ColorC[1];
-		mc->diffuse[2] = ColorC[2];
-		mc->diffuse[3] = ColorC[3];
-		mc->mu[0] = MuC[0];
-		mc->mu[1] = MuC[1];
-		mc->mu[2] = MuC[2];
-		mc->mu[3] = MuC[3];
-		mc->orientation[0] = 1.0;
-		//		mc->orientation[1] = 0.0;
-		//		mc->orientation[2] = 0.0;
-		//		mc->orientation[3] = 0.0;
-		//		mc->orientation[4] = 0.0;
-		mc->orientation[5] = 1.0;
-		//		mc->orientation[6] = 0.0;
-		//		mc->orientation[7] = 0.0;
-		//		mc->orientation[8] = 0.0;
-		//		mc->orientation[9] = 0.0;
-		mc->orientation[10] = 1.0;
-		//		mc->orientation[11] = 0.0;
-		//		mc->orientation[12] = 0.0;
-		//		mc->orientation[13] = 0.0;
-		//		mc->orientation[14] = 0.0;
-		mc->orientation[15] = 1.0;
-		mc->zoom[0] = zoom;
-		mc->zoom[1] = 1.0; // this is the switch ... sets the static variable in the shader
-		mc->zoom[2] = 0.0;
-		mc->zoom[3] = 0.0;
-
-		for (unsigned int i = 0; i < DOF_BLUR_KERNEL_RADIUS + 1; i++)
-		{
-			mc->KernelWeights[i][0] = DOFBuf.KernelWeights[i];
-		}
-
+		mc.zoom[1] = 1.0; // switch to y axis blurring
+		// copy onto GPU memory
+		memcopy32(msr.pData, &mc, sizeof(mc));
 
 		pImmediateContext->lpVtbl->Unmap(pImmediateContext, (ID3D11Resource *)pcbFractal, 0);
 
@@ -687,7 +666,6 @@ __declspec( naked )  void __cdecl winmain()
 		pSRVBackBuffer->lpVtbl->Release(pSRVBackBuffer);
 		pCompiledComputeShader->lpVtbl->Release(pCompiledComputeShader);
 		pCompiledCSFilterComputeShader->lpVtbl->Release(pCompiledCSFilterComputeShader);
-//		pCompiledCSFilterYComputeShader->lpVtbl->Release(pCompiledCSFilterYComputeShader);
 #endif
 
 #if 0 
