@@ -1,10 +1,13 @@
 ////////////////////////////////////////////////////////////////////////
 //
-// Port of Jan Vlietnick's Julia 4D demo 
+// Fractal: Port of Jan Vlietnick's Julia 4D demo 
+//
+// Shows the usage of an efficent compute Gauss blur kernel; optimized for AMD GPUs
+// The blur kernels for the x and y direction are in the same shader to save some space
 //
 // by Wolfgang Engel 
 //
-// Last time modified: 01/01/2014
+// Last time modified: 01/30/2014
 //
 ///////////////////////////////////////////////////////////////////////
 #define WIN32_LEAN_AND_MEAN
@@ -23,23 +26,22 @@ DEFINE_GUIDW(IID_ID3D11Texture2D,0x6f15aaf2,0xd208,0x4e89,0x9a,0xb4,0x48,0x95,0x
 // Macros
 // Macros are error-prone because they rely on textual substitution and do not perform type-checking.
 #define CLAMP(n,min,max)                        ((n < min) ? min : (n > max) ? max : n)
-// #define Distance(a,b)                           sqrtf((a-b) * (a-b))
 #define MIN(X,Y) ((X) < (Y) ? (X) : (Y))
-//#define CEIL_DIV(x,y) (((x) + (y) - 1) / (y))
 #define CEIL(VARIABLE) ( (VARIABLE - (int)VARIABLE)==0 ? (int)VARIABLE : (int)VARIABLE+1 )
 
 typedef unsigned int uint32;
 typedef unsigned char unit8;
 
 // define the size of the window
-#define THREADSX 16			// number of threads in the thread group used in the compute shader
-#define THREADSY 16			// number of threads in the thread group used in the compute shader
+#define THREADSX 16			// number of threads in the thread group used in the Julia 4D compute shader
+#define THREADSY 16			// number of threads in the thread group used in the Julia 4D compute shader
 #define WINDOWWIDTH 1024  
 #define WINDOWHEIGHT 768 
 
 #define WINWIDTH ((((WINDOWWIDTH + THREADSX - 1) / THREADSX) * THREADSX))	// multiply of ThreadsX 
 #define WINHEIGHT ((((WINDOWHEIGHT + THREADSY - 1) / THREADSY) * THREADSY)) // multiply of ThreadsY
 
+// upper left corner of window
 #define WINPOSX 50 
 #define WINPOSY 50
 
@@ -162,7 +164,7 @@ typedef struct
 	float	KernelWeights[DOF_BLUR_KERNEL_RADIUS_MAX + 1];
 }DOF_BUFFER;
 
-// this is a memcpy that is not very fast
+// this is a memcpy that is not very fast; aligned to uint32
 void memcopy32(void* dest, void* src, int size)
 {
 	unit8 *pdest = (unit8*)dest;
@@ -175,7 +177,8 @@ void memcopy32(void* dest, void* src, int size)
 		pdest += sizeof(uint32);
 		psrc += sizeof(uint32);
 	}
-/*
+
+/*  // in case we want to use a smaller than uint32 copy operation
 	loops = (size % sizeof(uint32));
 	for (int index = 0; index < loops; ++index)
 	{
@@ -209,19 +212,17 @@ double my_exp(double x)
 */
 static float NormalDistributionUnscaled(float X,float Mean,float Variance)
 {
-//	return exp(-((X - Mean) * (X - Mean)) / (2.0 * Variance));
 	return (float)my_exp(-((X - Mean) * (X - Mean)) / (2.0 * Variance));
 }
 
 //	
 static void CalculateWeights(float KernelRadius, DOF_BUFFER *buffer)
 {
+	// smallest IntegerKernelRadius will be 1
 	const unsigned int DELTA = 1;
 
 	float ClampedKernelRadius = CLAMP(KernelRadius, DELTA, DOF_BLUR_KERNEL_RADIUS_MAX);
 	INT IntegerKernelRadius = MIN(CEIL(ClampedKernelRadius), DOF_BLUR_KERNEL_RADIUS_MAX);
-
-	// smallest IntegerKernelRadius will be 1
 
 	float WeightSum = 0.0f;
 	for (INT SampleIndex = 0; SampleIndex <= IntegerKernelRadius; ++SampleIndex)
@@ -557,6 +558,8 @@ __declspec( naked )  void __cdecl winmain()
 		}
 
 		// Fill constant buffer
+		// D3D11_MAP_WRITE_DISCARD seems to be required in D3D11
+		// it would be better to keep the data in the constant buffer persistent and only update the required changes
 		static D3D11_MAPPED_SUBRESOURCE msr;
 		pImmediateContext->lpVtbl->Map(pImmediateContext, (ID3D11Resource *)pcbFractal, 0, D3D11_MAP_WRITE_DISCARD, 0, &msr);
 

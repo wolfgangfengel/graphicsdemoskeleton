@@ -38,11 +38,10 @@ cbuffer cbCS : register( b0 )
 	float4 c_mu : packoffset(c2);		// julia quaternion parameter
 	float4x4 rotation : packoffset(c3);
 	float4 zoom : packoffset(c7); // zoom with dummy offset 
-	float KernelWeights[DOF_BLUR_KERNEL_RADIUS + 1] : packoffset(c8);
-};
-
-
-
+	// when you use
+	//	float KernelWeights[DOF_BLUR_KERNEL_RADIUS_MAX + 1];
+	// it indexes into the x channels of float4's
+	float4 KernelWeights[DOF_BLUR_KERNEL_RADIUS_MAX + 1] : packoffset(c8);};
 
 
 #define KERNEL_RADIUS DOF_BLUR_KERNEL_RADIUS
