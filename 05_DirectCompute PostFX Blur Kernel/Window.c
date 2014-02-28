@@ -7,7 +7,7 @@
 //
 // by Wolfgang Engel 
 //
-// Last time modified: 01/30/2014
+// Last time modified: 02/27/2014
 //
 ///////////////////////////////////////////////////////////////////////
 #define WIN32_LEAN_AND_MEAN
@@ -32,23 +32,6 @@ DEFINE_GUIDW(IID_ID3D11Texture2D,0x6f15aaf2,0xd208,0x4e89,0x9a,0xb4,0x48,0x95,0x
 typedef unsigned int uint32;
 typedef unsigned char unit8;
 
-// define the size of the window
-#define THREADSX 16			// number of threads in the thread group used in the Julia 4D compute shader
-#define THREADSY 16			// number of threads in the thread group used in the Julia 4D compute shader
-#define WINDOWWIDTH 1024  
-#define WINDOWHEIGHT 768 
-
-#define WINWIDTH ((((WINDOWWIDTH + THREADSX - 1) / THREADSX) * THREADSX))	// multiply of ThreadsX 
-#define WINHEIGHT ((((WINDOWHEIGHT + THREADSY - 1) / THREADSY) * THREADSY)) // multiply of ThreadsY
-
-// upper left corner of window
-#define WINPOSX 50 
-#define WINPOSY 50
-
-// makes the applicaton behave well with windows
-// allows to remove some system calls to reduce size
-#define WELLBEHAVIOUR
-
 // for the blur kernel filter
 #define DOF_BLUR_KERNEL_RADIUS_MAX 16
 #define DOF_BLUR_KERNEL_RADIUS 8
@@ -56,8 +39,29 @@ typedef unsigned char unit8;
 #define RUN_LINES	2  		//	Lines to process per kernel invocation
 
 
+// define the size of the window
+#define THREADSX 16			// number of threads in the thread group used in the Julia 4D compute shader
+#define THREADSY 16			// number of threads in the thread group used in the Julia 4D compute shader
+#define WINDOWWIDTH 1920  
+#define WINDOWHEIGHT 1080 
+
+#define WINWIDTH ((((WINDOWWIDTH + RUN_SIZE - 1) / RUN_SIZE) * RUN_SIZE))	// multiply of ThreadsX 
+#define WINHEIGHT ((((WINDOWHEIGHT + RUN_SIZE - 1) / RUN_SIZE) * RUN_SIZE)) // multiply of ThreadsY
+
+// upper left corner of window
+#define WINPOSX 0 
+#define WINPOSY 0
+
+// makes the applicaton behave well with windows
+// allows to remove some system calls to reduce size
+#define WELLBEHAVIOUR
+
+
+
 #include "qjulia4D.sh"
 #include "BlurKernel.sh"
+
+
 
 //
 // Random number generator
@@ -601,11 +605,8 @@ __declspec( naked )  void __cdecl winmain()
 		// read the backbuffer
 		pImmediateContext->lpVtbl->CSSetShaderResources(pImmediateContext, 0, 1, &pSRVBackBuffer);
 
-		// Run the CS
-//		const UINT SizeXVertival = ceil(float(WINHEIGHT) / RUN_SIZE);
-//		const UINT SizeYVertival = ceil(float(WINWIDTH) / RUN_LINES);
 
-		pImmediateContext->lpVtbl->Dispatch(pImmediateContext, WINWIDTH / RUN_SIZE, WINHEIGHT / RUN_LINES, 1);
+		pImmediateContext->lpVtbl->Dispatch(pImmediateContext, (WINWIDTH) / RUN_SIZE, (WINHEIGHT) / RUN_LINES, 1);
 
 #if defined(WELLBEHAVIOUR)
 		// set back the shader resource view to zero
@@ -641,11 +642,7 @@ __declspec( naked )  void __cdecl winmain()
 		// read the temporary texture
 		pImmediateContext->lpVtbl->CSSetShaderResources(pImmediateContext, 0, 1, &pSRVTempTexture);
 
-		// Run the CS
-		//		const UINT SizeXVertival = ceil(float(WINHEIGHT) / RUN_SIZE);
-		//		const UINT SizeYVertival = ceil(float(WINWIDTH) / RUN_LINES);
-
-		pImmediateContext->lpVtbl->Dispatch(pImmediateContext, WINHEIGHT / RUN_SIZE, WINWIDTH / RUN_LINES, 1);
+		pImmediateContext->lpVtbl->Dispatch(pImmediateContext, (WINHEIGHT) / RUN_SIZE, (WINWIDTH) / RUN_LINES, 1);
 
 #if defined(WELLBEHAVIOUR)
 		pImmediateContext->lpVtbl->CSSetShaderResources(pImmediateContext, 0, 1, &pNull);
