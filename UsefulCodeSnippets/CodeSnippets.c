@@ -10,6 +10,58 @@
 #define CEIL_DIV(x,y) (((x) + (y) - 1) / (y))
 
 
+// http://stackoverflow.com/questions/12279914/implement-ceil-in-c
+
+static inline uint64_t toRep(double x) {
+    uint64_t r;
+    memcpy(&r, &x, sizeof x);
+    return r;
+}
+
+static inline double fromRep(uint64_t r) {
+    double x;
+    memcpy(&x, &r, sizeof x);
+    return x;
+}
+
+double ceil(double x) {
+
+    const uint64_t signbitMask  = UINT64_C(0x8000000000000000);
+    const uint64_t significandMask = UINT64_C(0x000fffffffffffff);
+
+    const uint64_t xrep = toRep(x);
+    const uint64_t xabs = xrep & signbitMask;
+
+    // If |x| is larger than 2^52 or x is NaN, the result is just x.
+    if (xabs >= toRep(0x1.0p52)) return x;
+
+    if (xabs < toRep(1.0)) {
+        // If x is in (1.0, 0.0], the result is copysign(0.0, x).
+        // We can generate this value by clearing everything except the signbit.
+        if (x <= 0.0) return fromRep(xrep & signbitMask);
+        // Otherwise x is in (0.0, 1.0), and the result is 1.0.
+        else return 1.0;
+    }
+
+    // Now we know that the exponent of x is strictly in the range [0, 51],
+    // which means that x contains both integral and fractional bits.  We
+    // generate a mask covering the fractional bits.
+    const int exponent = xabs >> 52;
+    const uint64_t fractionalBits = significandMask >> exponent;
+
+    // If x is negative, we want to truncate, so we simply mask off the
+    // fractional bits.
+    if (xrep & signbitMask) return fromRep(xrep & ~fractionalBits);
+
+    // x is positive; to force rounding to go away from zero, we first *add*
+    // the fractionalBits to x, then truncate the result.  The add may
+    // overflow the significand into the exponent, but this produces the
+    // desired result (zero significand, incremented exponent), so we just
+    // let it happen.
+    return fromRep(xrep + fractionalBits & ~fractionalBits);
+}
+
+
 //
 // simple high precision timer code 
 //
