@@ -48,8 +48,8 @@ void PostFX(uint3 ThreeDIndexOfThreadGroupInDispatch : SV_GroupID, uint3 DTid : 
 
 	// thread groups in x is 1920 / 16 = 120
 	// thread groups in y is 1080 / 16 = 68
-	// index in x (1920) goes from 0 to 120 (thread groups) * 4 (threads) = 480 indices in x
-	// index in y (1080) goes from 0 to 68 (thread groups) * 16 (threads) = 1080 indices in y
+	// index in x (1920) goes from 0 to 119 | 120 (thread groups) * 4 (threads) = 480 indices in x
+	// index in y (1080) goes from 0 to 67 | 68 (thread groups) * 16 (threads) = 1080 indices in y
 	uint idx = ((DTid.x * 4) + DTid.y * c_width);
 
 	// 1920 * 1080 = 2073600 pixels
@@ -70,32 +70,6 @@ void PostFX(uint3 ThreeDIndexOfThreadGroupInDispatch : SV_GroupID, uint3 DTid : 
 	if (IndexOfThreadInGroup < 2)	sharedMem[IndexOfThreadInGroup] += sharedMem[IndexOfThreadInGroup + 2];
 	if (IndexOfThreadInGroup < 1)	sharedMem[IndexOfThreadInGroup] += sharedMem[IndexOfThreadInGroup + 1];
 
-/*
-	// hard-coded for a thread group size of 64
-	if (IndexOfThreadInGroup < 32)
-		sharedMem[IndexOfThreadInGroup] += sharedMem[IndexOfThreadInGroup + 32];
-	GroupMemoryBarrierWithGroupSync();
-
-	if (IndexOfThreadInGroup < 16)
-		sharedMem[IndexOfThreadInGroup] += sharedMem[IndexOfThreadInGroup + 16];
-	GroupMemoryBarrierWithGroupSync();
-
-	if (IndexOfThreadInGroup < 8)
-		sharedMem[IndexOfThreadInGroup] += sharedMem[IndexOfThreadInGroup + 8];
-	GroupMemoryBarrierWithGroupSync();
-
-	if (IndexOfThreadInGroup < 4)
-		sharedMem[IndexOfThreadInGroup] += sharedMem[IndexOfThreadInGroup + 4];
-	GroupMemoryBarrierWithGroupSync();
-
-	if (IndexOfThreadInGroup < 2)
-		sharedMem[IndexOfThreadInGroup] += sharedMem[IndexOfThreadInGroup + 2];
-	GroupMemoryBarrierWithGroupSync();
-
-	if (IndexOfThreadInGroup < 1)
-		sharedMem[IndexOfThreadInGroup] += sharedMem[IndexOfThreadInGroup + 1];
-	GroupMemoryBarrierWithGroupSync();
-*/
 	// Have the first thread write out to the output
 	if (IndexOfThreadInGroup == 0)
 	{
