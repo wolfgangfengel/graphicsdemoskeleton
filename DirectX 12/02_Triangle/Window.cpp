@@ -3,7 +3,7 @@
 // Skeleton Intro Coding
 //
 // by Wolfgang Engel 
-// Last time modified: 05/21/2015
+// Last time modified: 07/01/2015
 //
 ///////////////////////////////////////////////////////////////////////
 
@@ -26,6 +26,7 @@
 using namespace DirectX;
 using namespace Microsoft::WRL;
 
+// shaders as headers 
 #include "vertex.sh"
 #include "pixel.sh"
 
@@ -45,32 +46,37 @@ struct Vertex
 	XMFLOAT4 color;
 };
 
-// Pipeline objects.
-ComPtr<IDXGISwapChain> mSwapChain;
-ComPtr<ID3D12Device> mDevice;
-ComPtr<ID3D12Resource> mRenderTarget;
-ComPtr<ID3D12CommandAllocator> mCommandAllocator;
-ComPtr<ID3D12CommandQueue> mCommandQueue;
-ComPtr<ID3D12DescriptorHeap> mDescriptorHeap;
-ComPtr<ID3D12PipelineState> mPSO;
-ComPtr<ID3D12GraphicsCommandList> mCommandList;
 
-ComPtr<ID3D12RootSignature> mRootSignature;
+
+// Pipeline objects.
+IDXGISwapChain* mSwapChain;
+ID3D12Device* mDevice;
+ID3D12Resource* mRenderTarget;
+ID3D12CommandAllocator* mCommandAllocator;
+ID3D12CommandQueue* mCommandQueue;
+ID3D12DescriptorHeap* mDescriptorHeap;
+ID3D12PipelineState* mPSO;
+ID3D12GraphicsCommandList* mCommandList;
+ID3D12RootSignature* mRootSignature;
 D3D12_VIEWPORT mViewport;
 D3D12_RECT mRectScissor;
 
 
 // App resources.
-ComPtr<ID3D12Resource> mBufVerts;
+ID3D12Resource* mBufVerts;
 D3D12_VERTEX_BUFFER_VIEW mDescViewBufVert;
 
 
 
 // Synchronization objects.
 HANDLE mHandleEvent;
-ComPtr<ID3D12Fence> mFence;
+ID3D12Fence* mFence;
 UINT64 mCurrentFence;
 
+EXTERN_C int _fltused = 0; // to get rid of the unresolved symbol __ftlused error
+
+
+#if DEBUG
 inline void ThrowIfFailed(HRESULT hr)
 {
 	if (FAILED(hr))
@@ -78,6 +84,9 @@ inline void ThrowIfFailed(HRESULT hr)
 		throw;
 	}
 }
+#else
+inline void ThrowIfFailed(HRESULT hr){}
+#endif
 
 void WaitForPreviousFrame()
 {
@@ -87,7 +96,7 @@ void WaitForPreviousFrame()
 
 	// Signal and increment the fence value.
 	const UINT64 fence = mCurrentFence;
-	ThrowIfFailed(mCommandQueue->Signal(mFence.Get(), fence));
+	ThrowIfFailed(mCommandQueue->Signal(mFence, fence));
 	mCurrentFence++;
 
 	// Wait until the previous frame is finished.
@@ -98,8 +107,40 @@ void WaitForPreviousFrame()
 	}
 }
 
-int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow)
+// makes the applicaton behave well with windows
+// allows to remove some system calls to reduce size
+#define WELLBEHAVIOUR
+
+#if 0 //defined(WELLBEHAVIOUR)
+
+// this is a simplified entry point ...
+void __stdcall WinMainCRTStartup()
 {
+	ExitProcess(WinMain(GetModuleHandle(NULL), NULL, NULL, 0));
+}
+
+// this is the main windows entry point ... 
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
+{
+#else
+// Take away prolog and epilog, then put a minial prolog back manually with assembly below. The function never returns so no epilog is necessary.
+__declspec(naked)  void __cdecl winmain()
+
+{
+	// Prolog
+	//__asm enter 0x10, 0;
+	__asm
+	{
+		push ebp
+		mov ebp, esp
+		sub esp, __LOCAL_SIZE
+	}
+
+	{ // Extra scope to make compiler accept the __decalspec(naked) with local variables
+
+#endif
+//int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow)
+//{
 	// timer global variables
 	DWORD		StartTime;
 	DWORD		CurrentTime;
@@ -116,13 +157,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow)
 #ifdef _DEBUG
 	// Enable the D3D12 debug layer.
 	{
-		ComPtr<ID3D12Debug> debugController;
+		ID3D12Debug* debugController;
 		ThrowIfFailed(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController)));
 		debugController->EnableDebugLayer();
 	}
 #endif
 
-	ComPtr<IDXGIFactory4> pFactory;
+	IDXGIFactory4* pFactory;
 	ThrowIfFailed(CreateDXGIFactory1(IID_PPV_ARGS(&pFactory)));
 
 	// Attempt to create a hardware based device first.  If that fails, 
@@ -135,23 +176,23 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow)
 
 	if (!SUCCEEDED(hardware_driver))
 	{
-		ComPtr<IDXGIAdapter> pWarpAdapter;
+		IDXGIAdapter* pWarpAdapter;
 		ThrowIfFailed(pFactory->EnumWarpAdapter(IID_PPV_ARGS(&pWarpAdapter)));
 
 		ThrowIfFailed(D3D12CreateDevice(
-			pWarpAdapter.Get(),
+			pWarpAdapter,
 			D3D_FEATURE_LEVEL_11_0,
 			IID_PPV_ARGS(&mDevice)
 			));
 	}
 
-	D3D12_COMMAND_QUEUE_DESC queueDesc = {};
+	static D3D12_COMMAND_QUEUE_DESC queueDesc;// = {};
 	queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
 	queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
 	ThrowIfFailed(mDevice->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&mCommandQueue)));
 
 	// Describe the swap chain.
-	DXGI_SWAP_CHAIN_DESC descSwapChain = {};
+	static DXGI_SWAP_CHAIN_DESC descSwapChain;// = {};
 	descSwapChain.BufferCount = 2;
 	descSwapChain.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
 	descSwapChain.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
@@ -161,7 +202,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow)
 	descSwapChain.Windowed = TRUE;
 
 	ThrowIfFailed(pFactory->CreateSwapChain(
-		mCommandQueue.Get(),		// Swap chain needs the queue so that it can force a flush on it.
+		mCommandQueue,		// Swap chain needs the queue so that it can force a flush on it.
 		&descSwapChain,
 		&mSwapChain
 		));
@@ -186,9 +227,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow)
 	}
 
 	// Describe and create a graphics pipeline state object (PSO).
-	D3D12_GRAPHICS_PIPELINE_STATE_DESC descPso = {};
+	static D3D12_GRAPHICS_PIPELINE_STATE_DESC descPso; // = {};
 	descPso.InputLayout = { layout, numElements };
-	descPso.pRootSignature = mRootSignature.Get();
+	descPso.pRootSignature = mRootSignature;
 	descPso.VS = { g_VShader, sizeof(g_VShader) };
 	descPso.PS = { g_PShader, sizeof(g_PShader) };
 	descPso.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
@@ -205,7 +246,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow)
 
 
 	// Describe and create a render target view (RTV) descriptor heap.
-	D3D12_DESCRIPTOR_HEAP_DESC descHeap = {};
+	static D3D12_DESCRIPTOR_HEAP_DESC descHeap; // = {};
 	descHeap.NumDescriptors = 1;
 	descHeap.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
 	descHeap.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
@@ -213,12 +254,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow)
 
 	// Create render target view (RTV).
 	ThrowIfFailed(mSwapChain->GetBuffer(0, IID_PPV_ARGS(&mRenderTarget)));
-	mDevice->CreateRenderTargetView(mRenderTarget.Get(), nullptr, mDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
+	mDevice->CreateRenderTargetView(mRenderTarget, nullptr, mDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
 
 
 	// allocate memory for a command list and create one
 	ThrowIfFailed(mDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&mCommandAllocator)));
-	ThrowIfFailed(mDevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, mCommandAllocator.Get(), mPSO.Get(), IID_PPV_ARGS(&mCommandList)));
+	ThrowIfFailed(mDevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, mCommandAllocator, mPSO, IID_PPV_ARGS(&mCommandList)));
 
 
 	mViewport = { 0.0f, 0.0f, static_cast<float>(WINWIDTH), static_cast<float>(WINHEIGHT), 0.0f, 1.0f };
@@ -264,7 +305,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow)
 
 	// Close the command list and use it to execute the initial GPU setup.
 	ThrowIfFailed(mCommandList->Close());
-//	ID3D12CommandList* ppCommandLists [] = { mCommandList.Get() };
+//	ID3D12CommandList* ppCommandLists [] = { mCommandList };
 //	mCommandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
 
 	// Create an event handle to use for frame synchronization.
@@ -286,8 +327,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow)
 
 	while (BRunning)
 	{
+#if defined(WELLBEHAVIOUR)
 		// Just remove the message
 		PeekMessage(&msg, hWnd, 0, 0, PM_REMOVE);
+#endif
 
 		// Calculate the current demo time
 		CurrentTime = GetTickCount() - StartTime;
@@ -305,14 +348,14 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow)
 		// However, when ExecuteCommandList() is called on a particular command 
 		// list, that command list can then be reset at any time and must be before 
 		// re-recording.
-		ThrowIfFailed(mCommandList->Reset(mCommandAllocator.Get(), mPSO.Get()));
+		ThrowIfFailed(mCommandList->Reset(mCommandAllocator, mPSO));
 
-		mCommandList->SetGraphicsRootSignature(mRootSignature.Get());
+		mCommandList->SetGraphicsRootSignature(mRootSignature);
 		mCommandList->RSSetViewports(1, &mViewport);
 		mCommandList->RSSetScissorRects(1, &mRectScissor);
 
 		// Indicate that the back buffer will be used as a render target.
-		mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(mRenderTarget.Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
+		mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(mRenderTarget, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
 
 		// Record commands.
 		float clearColor [] = { 0.0f, 0.2f, 0.4f, 1.0f };
@@ -323,21 +366,21 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow)
 		mCommandList->DrawInstanced(3, 1, 0, 0);
 
 		// Indicate that the back buffer will now be used to present.
-		mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(mRenderTarget.Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
+		mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(mRenderTarget, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
 
 		ThrowIfFailed(mCommandList->Close());
 
 
 
 		// Execute the command list.
-		ID3D12CommandList* ppCommandLists [] = { mCommandList.Get() };
+		ID3D12CommandList* ppCommandLists [] = { mCommandList };
 		mCommandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
 
 		// Present and move to the next back buffer.
 		ThrowIfFailed(mSwapChain->Present(1, 0));
 		mIndexLastSwapBuf = (1 + mIndexLastSwapBuf) % cNumSwapBufs;
 		mSwapChain->GetBuffer(mIndexLastSwapBuf, IID_PPV_ARGS(&mRenderTarget));
-		mDevice->CreateRenderTargetView(mRenderTarget.Get(), nullptr, mDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
+		mDevice->CreateRenderTargetView(mRenderTarget, nullptr, mDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
 
 		WaitForPreviousFrame();
 	}
@@ -346,7 +389,29 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow)
 	// Wait for the GPU to be done with all resources.
 	WaitForPreviousFrame();
 
-	CloseHandle(mHandleEvent);
+#if defined(WELLBEHAVIOUR)
+	// I think I need to release a lot of stuff here ..
+	mDevice->Release() ;
+	mSwapChain->Release();
+	mRenderTarget->Release();
+	mCommandAllocator->Release();
+	mCommandQueue->Release();
+	mDescriptorHeap->Release();
+	mPSO->Release();
+	mCommandList->Release();
+	mRootSignature->Release();
+	mBufVerts->Release();
+#endif
 
+#if 0 // defined(WELLBEHAVIOUR)
 	return (int) msg.wParam;
+#else
+	}
+
+	ExitProcess(0);
+#endif
+
+//	CloseHandle(mHandleEvent);
+
+//	return (int) msg.wParam;
 }
