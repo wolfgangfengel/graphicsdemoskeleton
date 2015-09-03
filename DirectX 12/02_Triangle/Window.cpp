@@ -15,16 +15,7 @@
 
 #include <d3d12.h>
 #include <dxgi1_4.h>
-#include <D3Dcompiler.h>
-#include <DirectXMath.h>
 #include "d3dx12.h"
-
-//#include <string>
-#include <wrl.h> // use namespace Microsoft::WRL;
-
-
-using namespace DirectX;
-using namespace Microsoft::WRL;
 
 // shaders as headers 
 #include "vertex.sh"
@@ -42,11 +33,9 @@ int cNumSwapBufs = 2;
 
 struct Vertex
 {
-	XMFLOAT3 position;
-	XMFLOAT4 color;
+	float position[3];
+	float color[4];
 };
-
-
 
 // Pipeline objects.
 IDXGISwapChain* mSwapChain;
@@ -73,7 +62,6 @@ ID3D12Fence* mFence;
 UINT64 mCurrentFence;
 
 EXTERN_C int _fltused = 0; // to get rid of the unresolved symbol __ftlused error
-
 
 #if _DEBUG
 inline void ThrowIfFailed(HRESULT hr)
@@ -214,8 +202,8 @@ __declspec(naked)  void __cdecl winmain()
 
 	// Create an empty root signature.
 	{
-		ComPtr<ID3DBlob> pOutBlob;
-		ComPtr<ID3DBlob> pErrorBlob;
+		ID3DBlob* pOutBlob;
+		ID3DBlob* pErrorBlob;
 		CD3DX12_ROOT_SIGNATURE_DESC descRootSignature;
 		descRootSignature.Init(0, nullptr, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 		ThrowIfFailed(D3D12SerializeRootSignature(&descRootSignature, D3D_ROOT_SIGNATURE_VERSION_1, &pOutBlob, &pErrorBlob));
