@@ -67,7 +67,6 @@ ID3D12Resource* mBufVerts;
 D3D12_VERTEX_BUFFER_VIEW mDescViewBufVert;
 
 
-
 // Synchronization objects.
 HANDLE mHandleEvent;
 ID3D12Fence* mFence;
@@ -111,13 +110,11 @@ void WaitForPreviousFrame()
 // allows to remove some system calls to reduce size
 #define WELLBEHAVIOUR
 
-#if 0 //defined(WELLBEHAVIOUR)
+// for demos we can use an entry point that occupies as much "space" as the regular entry point
+// if you change back to the regualar entry point you need to remove winmain in Visual Studio 2013 under Linker -> Advanced Entrypoint 
+//#define REGULARENTRYPOINT
 
-// this is a simplified entry point ...
-void __stdcall WinMainCRTStartup()
-{
-	ExitProcess(WinMain(GetModuleHandle(NULL), NULL, NULL, 0));
-}
+#if defined(REGULARENTRYPOINT)
 
 // this is the main windows entry point ... 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
@@ -139,8 +136,6 @@ __declspec(naked)  void __cdecl winmain()
 	{ // Extra scope to make compiler accept the __decalspec(naked) with local variables
 
 #endif
-//int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow)
-//{
 	// timer global variables
 	DWORD		StartTime;
 	DWORD		CurrentTime;
@@ -227,7 +222,7 @@ __declspec(naked)  void __cdecl winmain()
 	}
 
 	// Describe and create a graphics pipeline state object (PSO).
-	static D3D12_GRAPHICS_PIPELINE_STATE_DESC descPso; // = {};
+	static D3D12_GRAPHICS_PIPELINE_STATE_DESC descPso; 
 	descPso.InputLayout = { layout, numElements };
 	descPso.pRootSignature = mRootSignature;
 	descPso.VS = { g_VShader, sizeof(g_VShader) };
@@ -244,9 +239,8 @@ __declspec(naked)  void __cdecl winmain()
 	ThrowIfFailed(mDevice->CreateGraphicsPipelineState(&descPso, IID_PPV_ARGS(&mPSO)));
 
 
-
 	// Describe and create a render target view (RTV) descriptor heap.
-	static D3D12_DESCRIPTOR_HEAP_DESC descHeap; // = {};
+	static D3D12_DESCRIPTOR_HEAP_DESC descHeap; 
 	descHeap.NumDescriptors = 1;
 	descHeap.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
 	descHeap.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
@@ -305,17 +299,9 @@ __declspec(naked)  void __cdecl winmain()
 
 	// Close the command list and use it to execute the initial GPU setup.
 	ThrowIfFailed(mCommandList->Close());
-//	ID3D12CommandList* ppCommandLists [] = { mCommandList };
-//	mCommandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
 
 	// Create an event handle to use for frame synchronization.
 	mHandleEvent = CreateEventEx(nullptr, FALSE, FALSE, EVENT_ALL_ACCESS);
-
-
-	// Wait for the command list to execute; we are reusing the same command 
-	// list in our main loop but for now, we just want to wait for setup to 
-	// complete before continuing.
-//	WaitForPreviousFrame();
 
 	// setup timer 
 	StartTime = GetTickCount();
@@ -371,7 +357,6 @@ __declspec(naked)  void __cdecl winmain()
 		ThrowIfFailed(mCommandList->Close());
 
 
-
 		// Execute the command list.
 		ID3D12CommandList* ppCommandLists [] = { mCommandList };
 		mCommandQueue->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
@@ -403,15 +388,10 @@ __declspec(naked)  void __cdecl winmain()
 	mBufVerts->Release();
 #endif
 
-#if 0 // defined(WELLBEHAVIOUR)
+#if defined(REGULARENTRYPOINT)
 	return (int) msg.wParam;
 #else
 	}
-
 	ExitProcess(0);
 #endif
-
-//	CloseHandle(mHandleEvent);
-
-//	return (int) msg.wParam;
 }
