@@ -75,7 +75,7 @@ UINT64 mCurrentFence;
 EXTERN_C int _fltused = 0; // to get rid of the unresolved symbol __ftlused error
 
 
-#if DEBUG
+#if _DEBUG
 inline void ThrowIfFailed(HRESULT hr)
 {
 	if (FAILED(hr))
@@ -106,11 +106,10 @@ void WaitForPreviousFrame()
 	}
 }
 
-// makes the applicaton behave well with windows
-// allows to remove some system calls to reduce size
+// allows to remove some system calls to reduce size -> application doesn't comply with windows standard behaviour anymore, so be careful
 #define WELLBEHAVIOUR
 
-// for demos we can use an entry point that occupies as much "space" as the regular entry point
+// for demos we can use an entry point that occupies less "space" then the regular entry point
 // if you change back to the regualar entry point you need to remove winmain in Visual Studio 2013 under Linker -> Advanced Entrypoint 
 //#define REGULARENTRYPOINT
 
@@ -169,6 +168,7 @@ __declspec(naked)  void __cdecl winmain()
 		IID_PPV_ARGS(&mDevice)
 		);
 
+#if _DEBUG
 	if (!SUCCEEDED(hardware_driver))
 	{
 		IDXGIAdapter* pWarpAdapter;
@@ -180,14 +180,15 @@ __declspec(naked)  void __cdecl winmain()
 			IID_PPV_ARGS(&mDevice)
 			));
 	}
+#endif
 
-	static D3D12_COMMAND_QUEUE_DESC queueDesc;// = {};
+	static D3D12_COMMAND_QUEUE_DESC queueDesc;
 	queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
 	queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
 	ThrowIfFailed(mDevice->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&mCommandQueue)));
 
 	// Describe the swap chain.
-	static DXGI_SWAP_CHAIN_DESC descSwapChain;// = {};
+	static DXGI_SWAP_CHAIN_DESC descSwapChain;
 	descSwapChain.BufferCount = 2;
 	descSwapChain.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
 	descSwapChain.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
@@ -338,6 +339,8 @@ __declspec(naked)  void __cdecl winmain()
 
 		mCommandList->SetGraphicsRootSignature(mRootSignature);
 		mCommandList->RSSetViewports(1, &mViewport);
+
+		// this is now a requirement to use, although we set the viewport above
 		mCommandList->RSSetScissorRects(1, &mRectScissor);
 
 		// Indicate that the back buffer will be used as a render target.
