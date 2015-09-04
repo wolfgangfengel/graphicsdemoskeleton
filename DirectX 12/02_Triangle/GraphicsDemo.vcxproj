@@ -174,7 +174,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalDependencies>d3d12.lib;dxgi.lib;kernel32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <EntryPointSymbol>winmain</EntryPointSymbol>
-      <IgnoreSpecificDefaultLibraries>MSVCRT.lib;MSVCRTD.lib</IgnoreSpecificDefaultLibraries>
+      <IgnoreSpecificDefaultLibraries>MSVCRT.lib;MSVCRTD.lib;LIBCMT.lib</IgnoreSpecificDefaultLibraries>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
       <DataExecutionPrevention>false</DataExecutionPrevention>
       <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>

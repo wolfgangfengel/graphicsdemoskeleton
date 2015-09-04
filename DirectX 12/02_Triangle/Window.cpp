@@ -15,7 +15,6 @@
 
 #include <d3d12.h>
 #include <dxgi1_4.h>
-#include "d3dx12.h"
 
 // shaders as headers 
 #include "vertex.sh"
@@ -156,6 +155,7 @@ __declspec(naked)  void __cdecl winmain()
 		IID_PPV_ARGS(&mDevice)
 		);
 
+
 #if _DEBUG
 	if (!SUCCEEDED(hardware_driver))
 	{
@@ -204,11 +204,61 @@ __declspec(naked)  void __cdecl winmain()
 	{
 		ID3DBlob* pOutBlob;
 		ID3DBlob* pErrorBlob;
-		CD3DX12_ROOT_SIGNATURE_DESC descRootSignature;
-		descRootSignature.Init(0, nullptr, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+		D3D12_ROOT_SIGNATURE_DESC descRootSignature;
+		descRootSignature = { 0, nullptr, 0, nullptr, D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT };
 		ThrowIfFailed(D3D12SerializeRootSignature(&descRootSignature, D3D_ROOT_SIGNATURE_VERSION_1, &pOutBlob, &pErrorBlob));
 		ThrowIfFailed(mDevice->CreateRootSignature(0, pOutBlob->GetBufferPointer(), pOutBlob->GetBufferSize(), IID_PPV_ARGS(&mRootSignature)));
 	}
+
+
+	// rasterizer state
+	D3D12_RASTERIZER_DESC rasterizer =
+	{
+		D3D12_FILL_MODE_SOLID,
+		D3D12_CULL_MODE_BACK,
+		false,
+		D3D12_DEFAULT_DEPTH_BIAS,
+		D3D12_DEFAULT_DEPTH_BIAS_CLAMP,
+		D3D12_DEFAULT_SLOPE_SCALED_DEPTH_BIAS,
+		true,
+		false,
+		false,
+		0,
+		D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF
+	};
+
+
+		/*
+		// stencip ops
+		const D3D12_DEPTH_STENCILOP_DESC defaultStencilOp =
+		{ D3D12_STENCIL_OP_KEEP, D3D12_STENCIL_OP_KEEP, D3D12_STENCIL_OP_KEEP, D3D12_COMPARISON_FUNC_ALWAYS };
+
+	D3D12_DEPTH_STENCIL_DESC depthstencil = 
+	{ 
+	 true, 
+	 D3D12_DEPTH_WRITE_MASK_ALL, 
+	 D3D12_COMPARISON_FUNC_LESS, 
+	 false, 
+	 D3D12_DEFAULT_STENCIL_READ_MASK, 
+	 D3D12_DEFAULT_STENCIL_WRITE_MASK, 
+	 defaultStencilOp, 
+	 defaultStencilOp
+	};
+	*/
+
+	const D3D12_RENDER_TARGET_BLEND_DESC defaultRenderTargetBlendDesc =
+	{
+		FALSE, FALSE,
+		D3D12_BLEND_ONE, D3D12_BLEND_ZERO, D3D12_BLEND_OP_ADD,
+		D3D12_BLEND_ONE, D3D12_BLEND_ZERO, D3D12_BLEND_OP_ADD,
+		D3D12_LOGIC_OP_NOOP,
+		D3D12_COLOR_WRITE_ENABLE_ALL,
+	};
+	//for (UINT i = 0; i < D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT; ++i)
+		//RenderTarget[i] = defaultRenderTargetBlendDesc;
+
+	D3D12_BLEND_DESC blendstate = { false, false, defaultRenderTargetBlendDesc };
+
 
 	// Describe and create a graphics pipeline state object (PSO).
 	static D3D12_GRAPHICS_PIPELINE_STATE_DESC descPso; 
@@ -216,8 +266,8 @@ __declspec(naked)  void __cdecl winmain()
 	descPso.pRootSignature = mRootSignature;
 	descPso.VS = { g_VShader, sizeof(g_VShader) };
 	descPso.PS = { g_PShader, sizeof(g_PShader) };
-	descPso.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
-	descPso.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
+	descPso.RasterizerState = rasterizer;
+	descPso.BlendState = blendstate;
 	descPso.DepthStencilState.DepthEnable = FALSE;
 	descPso.DepthStencilState.StencilEnable = FALSE;
 	descPso.SampleMask = UINT_MAX;
@@ -262,13 +312,37 @@ __declspec(naked)  void __cdecl winmain()
 	// recommended. Every time the GPU needs it, the upload heap will be marshalled 
 	// over. Please read up on Default Heap usage. An upload heap is used here for 
 	// code simplicity and because there are very few verts to actually transfer.
+	D3D12_HEAP_PROPERTIES heapProperties = 
+	{ 
+		D3D12_HEAP_TYPE_UPLOAD, 
+		D3D12_CPU_PAGE_PROPERTY_UNKNOWN, 
+		D3D12_MEMORY_POOL_UNKNOWN, 
+		1, 
+		1 
+	};
+
+	static D3D12_RESOURCE_DESC VertexBufferDesc = 
+	{ 
+		D3D12_RESOURCE_DIMENSION_BUFFER,			// type
+		0,											// alignment
+		_countof(triangleVerts) * sizeof(Vertex),	// size in bytes
+		1,											// height 
+		1,											// depthOrArraySize
+		1,											// mip levels
+		DXGI_FORMAT_UNKNOWN,						// format
+		{ 1, 0 },									// sample description
+		D3D12_TEXTURE_LAYOUT_ROW_MAJOR,				// layout
+		D3D12_RESOURCE_FLAG_NONE					// flags
+	}; 
+
 	ThrowIfFailed(mDevice->CreateCommittedResource(
-		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+		&heapProperties,
 		D3D12_HEAP_FLAG_NONE,
-		&CD3DX12_RESOURCE_DESC::Buffer(_countof(triangleVerts) * sizeof(Vertex)),
+		&VertexBufferDesc,
 		D3D12_RESOURCE_STATE_GENERIC_READ,
 		nullptr,    // Clear value
 		IID_PPV_ARGS(&mBufVerts)));
+
 
 	// Copy the triangle data to the vertex buffer.
 	UINT8* dataBegin;
@@ -331,8 +405,16 @@ __declspec(naked)  void __cdecl winmain()
 		// this is now a requirement to use, although we set the viewport above
 		mCommandList->RSSetScissorRects(1, &mRectScissor);
 
+
 		// Indicate that the back buffer will be used as a render target.
-		mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(mRenderTarget, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
+		const D3D12_RESOURCE_BARRIER barrierRTAsTexture = 
+		{
+			D3D12_RESOURCE_BARRIER_TYPE_TRANSITION,
+			D3D12_RESOURCE_BARRIER_FLAG_NONE,
+			{ mRenderTarget, D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET }
+		};
+
+		mCommandList->ResourceBarrier(1, &barrierRTAsTexture);
 
 		// Record commands.
 		float clearColor [] = { 0.0f, 0.2f, 0.4f, 1.0f };
@@ -342,8 +424,16 @@ __declspec(naked)  void __cdecl winmain()
 		mCommandList->IASetVertexBuffers(0, 1, &mDescViewBufVert);
 		mCommandList->DrawInstanced(3, 1, 0, 0);
 
+
 		// Indicate that the back buffer will now be used to present.
-		mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(mRenderTarget, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
+		const D3D12_RESOURCE_BARRIER barrierRTForPresent =
+		{ 
+			D3D12_RESOURCE_BARRIER_TYPE_TRANSITION, 
+			D3D12_RESOURCE_BARRIER_FLAG_NONE, 
+			{ mRenderTarget, D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT }
+		};
+
+		mCommandList->ResourceBarrier(1, &barrierRTForPresent);
 
 		ThrowIfFailed(mCommandList->Close());
 
@@ -377,6 +467,11 @@ __declspec(naked)  void __cdecl winmain()
 	mCommandList->Release();
 	mRootSignature->Release();
 	mBufVerts->Release();
+#endif
+
+#if _DEBUG
+//	if (debugController) debugController->ReportLiveDeviceObjects(D3D11_RLDO_SUMMARY | D3D11_RLDO_DETAIL);
+//	debugController->Release();
 #endif
 
 #if defined(REGULARENTRYPOINT)
