@@ -3,7 +3,7 @@
 // Skeleton Intro Coding
 //
 // by Wolfgang Engel 
-// Last time modified: 07/01/2015
+// Last time modified: 09/03/2015
 //
 ///////////////////////////////////////////////////////////////////////
 
@@ -74,6 +74,20 @@ inline void ThrowIfFailed(HRESULT hr)
 inline void ThrowIfFailed(HRESULT hr){}
 #endif
 
+
+void *memcpy(void *v_dst, const void *v_src, unsigned int c)
+{
+	const char *src = (const char *)v_src;
+	char *dst = (char *)v_dst;
+
+	/* Simple, byte oriented memcpy. */
+	while (c--)
+		*dst++ = *src++;
+
+	return v_dst;
+}
+
+
 void WaitForPreviousFrame()
 {
 	// WAITING FOR THE FRAME TO COMPLETE BEFORE CONTINUING IS NOT BEST PRACTICE.
@@ -122,6 +136,7 @@ __declspec(naked)  void __cdecl winmain()
 	{ // Extra scope to make compiler accept the __decalspec(naked) with local variables
 
 #endif
+
 	// timer global variables
 	DWORD		StartTime;
 	DWORD		CurrentTime;
@@ -212,7 +227,7 @@ __declspec(naked)  void __cdecl winmain()
 
 
 	// rasterizer state
-	D3D12_RASTERIZER_DESC rasterizer =
+	static D3D12_RASTERIZER_DESC rasterizer =
 	{
 		D3D12_FILL_MODE_SOLID,
 		D3D12_CULL_MODE_BACK,
@@ -227,37 +242,14 @@ __declspec(naked)  void __cdecl winmain()
 		D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF
 	};
 
-
-		/*
-		// stencip ops
-		const D3D12_DEPTH_STENCILOP_DESC defaultStencilOp =
-		{ D3D12_STENCIL_OP_KEEP, D3D12_STENCIL_OP_KEEP, D3D12_STENCIL_OP_KEEP, D3D12_COMPARISON_FUNC_ALWAYS };
-
-	D3D12_DEPTH_STENCIL_DESC depthstencil = 
-	{ 
-	 true, 
-	 D3D12_DEPTH_WRITE_MASK_ALL, 
-	 D3D12_COMPARISON_FUNC_LESS, 
-	 false, 
-	 D3D12_DEFAULT_STENCIL_READ_MASK, 
-	 D3D12_DEFAULT_STENCIL_WRITE_MASK, 
-	 defaultStencilOp, 
-	 defaultStencilOp
-	};
-	*/
-
-	const D3D12_RENDER_TARGET_BLEND_DESC defaultRenderTargetBlendDesc =
-	{
+	// this includes the D3D12_RENDER_TARGET_BLEND_DESC
+	static D3D12_BLEND_DESC blendstate = { false, false, {
 		FALSE, FALSE,
 		D3D12_BLEND_ONE, D3D12_BLEND_ZERO, D3D12_BLEND_OP_ADD,
 		D3D12_BLEND_ONE, D3D12_BLEND_ZERO, D3D12_BLEND_OP_ADD,
 		D3D12_LOGIC_OP_NOOP,
 		D3D12_COLOR_WRITE_ENABLE_ALL,
-	};
-	//for (UINT i = 0; i < D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT; ++i)
-		//RenderTarget[i] = defaultRenderTargetBlendDesc;
-
-	D3D12_BLEND_DESC blendstate = { false, false, defaultRenderTargetBlendDesc };
+	} };
 
 
 	// Describe and create a graphics pipeline state object (PSO).
@@ -312,7 +304,7 @@ __declspec(naked)  void __cdecl winmain()
 	// recommended. Every time the GPU needs it, the upload heap will be marshalled 
 	// over. Please read up on Default Heap usage. An upload heap is used here for 
 	// code simplicity and because there are very few verts to actually transfer.
-	D3D12_HEAP_PROPERTIES heapProperties = 
+	static D3D12_HEAP_PROPERTIES heapProperties = 
 	{ 
 		D3D12_HEAP_TYPE_UPLOAD, 
 		D3D12_CPU_PAGE_PROPERTY_UNKNOWN, 
@@ -348,6 +340,7 @@ __declspec(naked)  void __cdecl winmain()
 	UINT8* dataBegin;
 	mBufVerts->Map(0, nullptr, reinterpret_cast<void**>(&dataBegin));
 	memcpy(dataBegin, triangleVerts, sizeof(triangleVerts));
+	//dataBegin = triangleVerts
 	mBufVerts->Unmap(0, nullptr);
 
 	// Initialize the vertex buffer view.
@@ -467,6 +460,7 @@ __declspec(naked)  void __cdecl winmain()
 	mCommandList->Release();
 	mRootSignature->Release();
 	mBufVerts->Release();
+	mFence->Release();
 #endif
 
 #if _DEBUG
