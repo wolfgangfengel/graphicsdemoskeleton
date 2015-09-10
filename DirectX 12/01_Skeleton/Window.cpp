@@ -3,7 +3,7 @@
 // Skeleton Intro Coding
 //
 // by Wolfgang Engel 
-// Last time modified: 05/21/2015
+// Last time modified: 09/10/2015
 //
 ///////////////////////////////////////////////////////////////////////
 
@@ -15,14 +15,7 @@
 
 #include <d3d12.h>
 #include <dxgi1_4.h>
-//#include <D3Dcompiler.h>
-//#include <DirectXMath.h>
-#include "d3dx12.h"
 
-//#include <string>
-#include <wrl.h> // use namespace Microsoft::WRL;
-
-using namespace Microsoft::WRL;
 
 // define the size of the window
 #define WINWIDTH 800 
@@ -82,17 +75,14 @@ void WaitForPreviousFrame()
 	}
 }
 
-// makes the applicaton behave well with windows
-// allows to remove some system calls to reduce size
+// allows to remove some system calls to reduce size -> application doesn't comply with windows standard behaviour anymore, so be careful
 #define WELLBEHAVIOUR
 
-#if 0 //defined(WELLBEHAVIOUR)
+// for demos we can use an entry point that occupies less "space" then the regular entry point
+// if you change back to the regualar entry point you need to remove winmain in Visual Studio 2013 under Linker -> Advanced Entrypoint 
+//#define REGULARENTRYPOINT
 
-// this is a simplified entry point ...
-void __stdcall WinMainCRTStartup()
-{
-	ExitProcess(WinMain(GetModuleHandle(NULL), NULL, NULL, 0));
-}
+#if defined(REGULARENTRYPOINT)
 
 // this is the main windows entry point ... 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
@@ -107,57 +97,62 @@ __declspec(naked)  void __cdecl winmain()
 	__asm
 	{
 		push ebp
-			mov ebp, esp
-			sub esp, __LOCAL_SIZE
+		mov ebp, esp
+		sub esp, __LOCAL_SIZE
 	}
 
 	{ // Extra scope to make compiler accept the __decalspec(naked) with local variables
 
 #endif
-		// timer global variables
-		DWORD		StartTime;
-		DWORD		CurrentTime;
 
-		// keep track if the game loop is still running
-		BOOL		BRunning;
+	// timer global variables
+	DWORD		StartTime;
+	DWORD		CurrentTime;
 
-		// the most simple window
-		HWND hWnd = CreateWindow(L"edit", 0, WS_POPUP | WS_VISIBLE, WINPOSX, WINPOSY, WINWIDTH, WINHEIGHT, 0, 0, 0, 0);
+	// keep track if the game loop is still running
+	BOOL		BRunning;
 
-		// don't show the cursor
-		ShowCursor(FALSE);
+	// the most simple window
+	HWND hWnd = CreateWindow(L"edit", 0, WS_POPUP | WS_VISIBLE, WINPOSX, WINPOSY, WINWIDTH, WINHEIGHT, 0, 0, 0, 0);
+
+	// don't show the cursor
+	ShowCursor(FALSE);
 
 #ifdef _DEBUG
-		// Enable the D3D12 debug layer.
-		{
-			ID3D12Debug* debugController;
-			ThrowIfFailed(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController)));
-			debugController->EnableDebugLayer();
-		}
+	// Enable the D3D12 debug layer.
+	{
+		ID3D12Debug* debugController;
+		ThrowIfFailed(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController)));
+		debugController->EnableDebugLayer();
+	}
 #endif
 
-		IDXGIFactory4* pFactory;
-		ThrowIfFailed(CreateDXGIFactory1(IID_PPV_ARGS(&pFactory)));
+	IDXGIFactory4* pFactory;
+	ThrowIfFailed(CreateDXGIFactory1(IID_PPV_ARGS(&pFactory)));
 
-		// Attempt to create a hardware based device first.  If that fails, 
-		// then fallback to WARP/software.
-		HRESULT hardware_driver = D3D12CreateDevice(
-			nullptr,
+	// Attempt to create a hardware based device first.  If that fails, 
+	// then fallback to WARP/software.
+	HRESULT hardware_driver = D3D12CreateDevice(
+		nullptr,
+		D3D_FEATURE_LEVEL_11_0,
+		IID_PPV_ARGS(&mDevice)
+		);
+
+
+#if _DEBUG
+	if (!SUCCEEDED(hardware_driver))
+	{
+		IDXGIAdapter* pWarpAdapter;
+		ThrowIfFailed(pFactory->EnumWarpAdapter(IID_PPV_ARGS(&pWarpAdapter)));
+
+		ThrowIfFailed(D3D12CreateDevice(
+			pWarpAdapter,
 			D3D_FEATURE_LEVEL_11_0,
 			IID_PPV_ARGS(&mDevice)
-			);
+ 			));
+	}
+#endif
 
-		if (!SUCCEEDED(hardware_driver))
-		{
-			IDXGIAdapter* pWarpAdapter;
-			ThrowIfFailed(pFactory->EnumWarpAdapter(IID_PPV_ARGS(&pWarpAdapter)));
-
-			ThrowIfFailed(D3D12CreateDevice(
-				pWarpAdapter,
-				D3D_FEATURE_LEVEL_11_0,
-				IID_PPV_ARGS(&mDevice)
-				));
-		}
 
 		static D3D12_COMMAND_QUEUE_DESC queueDesc;
 		queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
@@ -248,14 +243,28 @@ __declspec(naked)  void __cdecl winmain()
 			ThrowIfFailed(mCommandList->Reset(mCommandAllocator, mPSO));
 
 			// Indicate that the back buffer will be used as a render target.
-			mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(mRenderTarget, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
+			const D3D12_RESOURCE_BARRIER barrierRTAsTexture =
+			{
+				D3D12_RESOURCE_BARRIER_TYPE_TRANSITION,
+				D3D12_RESOURCE_BARRIER_FLAG_NONE,
+				{ mRenderTarget, D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET }
+			};
+
+			mCommandList->ResourceBarrier(1, &barrierRTAsTexture);
 
 			// Record commands.
 			float clearColor [] = { 0.0f, 0.2f, 0.4f, 1.0f };
 			mCommandList->ClearRenderTargetView(mDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), clearColor, 0, nullptr);
 
 			// Indicate that the back buffer will now be used to present.
-			mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(mRenderTarget, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
+			const D3D12_RESOURCE_BARRIER barrierRTForPresent =
+			{
+				D3D12_RESOURCE_BARRIER_TYPE_TRANSITION,
+				D3D12_RESOURCE_BARRIER_FLAG_NONE,
+				{ mRenderTarget, D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT }
+			};
+
+			mCommandList->ResourceBarrier(1, &barrierRTForPresent);
 
 			ThrowIfFailed(mCommandList->Close());
 
@@ -287,15 +296,11 @@ __declspec(naked)  void __cdecl winmain()
 		mCommandList->Release();
 #endif
 
-#if 0 // defined(WELLBEHAVIOUR)
-		return (int) msg.wParam;
+#if defined(REGULARENTRYPOINT)
+	return (int) msg.wParam;
 #else
 	}
 
 	ExitProcess(0);
 #endif
-
-	//	CloseHandle(mHandleEvent);
-
-	//	return (int) msg.wParam;}
 }

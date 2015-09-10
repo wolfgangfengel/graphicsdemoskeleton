@@ -116,7 +116,7 @@
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>d3d12.lib;dxgi.lib;kernel32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <IgnoreSpecificDefaultLibraries>MSVCRT.lib;MSVCRTD.lib</IgnoreSpecificDefaultLibraries>
+      <IgnoreSpecificDefaultLibraries>MSVCRT.lib;MSVCRTD.lib;LIBCMT.lib,LIBCMTD.lib</IgnoreSpecificDefaultLibraries>
       <EntryPointSymbol>winmain</EntryPointSymbol>
       <TargetMachine>MachineX86</TargetMachine>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>

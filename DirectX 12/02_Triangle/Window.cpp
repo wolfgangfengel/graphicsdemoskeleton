@@ -74,7 +74,7 @@ inline void ThrowIfFailed(HRESULT hr)
 inline void ThrowIfFailed(HRESULT hr){}
 #endif
 
-
+// to avoid libc
 void *memcpy(void *v_dst, const void *v_src, unsigned int c)
 {
 	const char *src = (const char *)v_src;
