@@ -13,6 +13,10 @@
 #include <sal.h>
 #include <rpcsal.h>
 
+
+
+
+
 #define DEFINE_GUIDW(name, l, w1, w2, b1, b2, b3, b4, b5, b6, b7, b8) const GUID DECLSPEC_SELECTANY name = { l, w1, w2, { b1, b2, b3, b4, b5, b6, b7, b8 } }
 //DEFINE_GUIDW(IID_ID3D11Texture2D, 0x6f15aaf2, 0xd208, 0x4e89, 0x9a, 0xb4, 0x48, 0x95, 0x35, 0xd3, 0x4f, 0x9c);
 
@@ -26,6 +30,7 @@ DEFINE_GUIDW(IID_ID3D12Resource, 0x696442be, 0xa72e, 0x4059, 0xbc, 0x79, 0x5b, 0
 DEFINE_GUIDW(IID_ID3D12CommandAllocator, 0x6102dee4, 0xaf59, 0x4b09, 0xb9, 0x99, 0xb4, 0x4d, 0x73, 0xf0, 0x9b, 0x24);
 DEFINE_GUIDW(IID_ID3D12Fence, 0x0a753dcf, 0xc4d8, 0x4b91, 0xad, 0xf6, 0xbe, 0x5a, 0x60, 0xd9, 0x5a, 0x76);
 DEFINE_GUIDW(IID_ID3D12PipelineState, 0x765a30f3, 0xf624, 0x4c6f, 0xa8, 0x28, 0xac, 0xe9, 0x48, 0x62, 0x24, 0x45);
+//DEFINE_GUIDW(IID_ID3D12DescriptorHeap,0x8efb471d,0x616c,0x4f49,0x90,0xf7,0x12,0x7b,0xb7,0x63,0xfa,0x51);
 DEFINE_GUIDW(IID_ID3D12DescriptorHeap, 0x8efb471d, 0x616c, 0x4f49, 0x90, 0xf7, 0x12, 0x7b, 0xb7, 0x63, 0xfa, 0x51);
 DEFINE_GUIDW(IID_ID3D12QueryHeap, 0x0d9658ae, 0xed45, 0x469e, 0xa6, 0x1d, 0x97, 0x0e, 0xc5, 0x83, 0xca, 0xb4);
 DEFINE_GUIDW(IID_ID3D12CommandSignature, 0xc36a797c, 0xec80, 0x4f0a, 0x89, 0x85, 0xa7, 0xb2, 0x47, 0x50, 0x82, 0xd1);
@@ -33,6 +38,7 @@ DEFINE_GUIDW(IID_ID3D12CommandList, 0x7116d91c, 0xe7e4, 0x47ce, 0xb8, 0xc6, 0xec
 DEFINE_GUIDW(IID_ID3D12GraphicsCommandList, 0x5b160d0f, 0xac1b, 0x4185, 0x8b, 0xa8, 0xb3, 0xae, 0x42, 0xa5, 0xa4, 0x55);
 DEFINE_GUIDW(IID_ID3D12CommandQueue, 0x0ec870a6, 0x5d7e, 0x4c22, 0x8c, 0xfc, 0x5b, 0xaa, 0xe0, 0x76, 0x16, 0xed);
 DEFINE_GUIDW(IID_ID3D12Device, 0x189819f1, 0x1db6, 0x4b57, 0xbe, 0x54, 0x18, 0x21, 0x33, 0x9b, 0x85, 0xf7);
+
 
 // d3d12sdklayers.h
 DEFINE_GUIDW(DXGI_DEBUG_D3D12, 0xcf59a98c, 0xa950, 0x4326, 0x91, 0xef, 0x9b, 0xba, 0xa1, 0x7b, 0xfd, 0x95);
@@ -43,7 +49,7 @@ DEFINE_GUIDW(IID_ID3D12DebugCommandQueue, 0x09e0bf36, 0x54ac, 0x484f, 0x88, 0x47
 DEFINE_GUIDW(IID_ID3D12DebugCommandList, 0x09e0bf36, 0x54ac, 0x484f, 0x88, 0x47, 0x4b, 0xae, 0xea, 0xb6, 0x05, 0x3f);
 DEFINE_GUIDW(IID_ID3D12InfoQueue, 0x0742a90b, 0xc387, 0x483f, 0xb9, 0x46, 0x30, 0xa7, 0xe4, 0xe6, 0x14, 0x58);
 
-
+/*
 // dxgi.h 
 DEFINE_GUIDW(IID_IDXGIObject, 0xaec22fb8, 0x76f3, 0x4639, 0x9b, 0xe0, 0x28, 0xeb, 0x43, 0xa6, 0x7a, 0x2e);
 DEFINE_GUIDW(IID_IDXGIDeviceSubObject, 0x3d3e0379, 0xf9de, 0x4d58, 0xbb, 0x6c, 0x18, 0xd6, 0x29, 0x92, 0xf1, 0xa6);
@@ -59,14 +65,13 @@ DEFINE_GUIDW(IID_IDXGIDevice, 0x54ec77fa, 0x1377, 0x44e6, 0x8c, 0x32, 0x88, 0xfd
 DEFINE_GUIDW(IID_IDXGIFactory1, 0x770aae78, 0xf26f, 0x4dba, 0xa8, 0x29, 0x25, 0x3c, 0x83, 0xd1, 0xb3, 0x87);
 DEFINE_GUIDW(IID_IDXGIAdapter1, 0x29038f61, 0x3839, 0x4626, 0x91, 0xfd, 0x08, 0x68, 0x79, 0x01, 0x1a, 0x05);
 DEFINE_GUIDW(IID_IDXGIDevice1, 0x77db970f, 0x6276, 0x48ba, 0xba, 0x28, 0x07, 0x01, 0x43, 0xb4, 0x39, 0x2c);
+*/
 
 // dxgi1_4.h
 DEFINE_GUIDW(IID_IDXGISwapChain3, 0x94d99bdb, 0xf1f8, 0x4ab0, 0xb2, 0x36, 0x7d, 0xa0, 0x17, 0x0e, 0xda, 0xb1);
 DEFINE_GUIDW(IID_IDXGIOutput4, 0xdc7dca35, 0x2196, 0x414d, 0x9F, 0x53, 0x61, 0x78, 0x84, 0x03, 0x2a, 0x60);
 DEFINE_GUIDW(IID_IDXGIFactory4, 0x1bc6ea02, 0xef36, 0x464f, 0xbf, 0x0c, 0x21, 0xca, 0x39, 0xe5, 0x16, 0x8a);
 DEFINE_GUIDW(IID_IDXGIAdapter3, 0x645967A4, 0x1392, 0x4310, 0xA7, 0x98, 0x80, 0x53, 0xCE, 0x3E, 0x93, 0xFD);
-
-
 
 #include <d3d12.h>
 #include <dxgi1_4.h>
@@ -79,27 +84,76 @@ DEFINE_GUIDW(IID_IDXGIAdapter3, 0x645967A4, 0x1392, 0x4310, 0xA7, 0x98, 0x80, 0x
 #define WINPOSX 200 
 #define WINPOSY 200
 
-IDXGIFactory4* pFactory = NULL;
-ID3D12Device* mDevice = NULL;
-ID3D12CommandQueue* mCommandQueue = NULL;
-IDXGISwapChain* mSwapChain = NULL;
-ID3D12CommandAllocator* mCommandAllocator = NULL;
-ID3D12DescriptorHeap* mDescriptorHeap = NULL;
-ID3D12Resource* mRenderTarget = NULL;
-ID3D12GraphicsCommandList* mCommandList = NULL;
-ID3D12PipelineState* mPSO = NULL;
-IDXGIAdapter* pWarpAdapter = NULL;
+#define FRAMECOUNT 2
 
-//ID3D12Device* mDevice2 = NULL;
-//D3D12_DESCRIPTOR_HEAP_DESC descHeap2;
+// Pipeline objects.
+IDXGISwapChain3* mSwapChain;
+ID3D12Device* mDevice;
+ID3D12Resource* mRenderTarget[FRAMECOUNT];
+ID3D12CommandAllocator* mCommandAllocator;
+ID3D12CommandQueue* mCommandQueue;
+ID3D12DescriptorHeap* mDescriptorHeap;
+ID3D12PipelineState* mPSO;
+ID3D12GraphicsCommandList* mCommandList;
 
+// Synchronization objects.
+HANDLE mHandleEvent;
+ID3D12Fence* mFence;
+UINT64 mCurrentFence;
+
+UINT mrtvDescriptorIncrSize;
+UINT mframeIndex;
+
+EXTERN_C int _fltused = 0; // to get rid of the unresolved symbol __ftlused error
+
+
+inline void ThrowIfFailed(HRESULT hr) 
+{ 
+#if defined(_DEBUG)
+	if (hr != S_OK)
+		MessageBoxA(NULL, "Function call failed", "Error", MB_OK | MB_ICONERROR);
+#endif
+}
+
+void WaitForPreviousFrame()
+{
+	// WAITING FOR THE FRAME TO COMPLETE BEFORE CONTINUING IS NOT BEST PRACTICE.
+	// This is code implemented as such for simplicity. More advanced samples 
+	// illustrate how to use fences for efficient resource usage.
+
+	// Signal and increment the fence value.
+	const UINT64 fence = mCurrentFence;
+	ThrowIfFailed(mCommandQueue->lpVtbl->Signal(mCommandQueue, mFence, fence));
+	mCurrentFence++;
+
+	// Wait until the previous frame is finished.
+	if (mFence->lpVtbl->GetCompletedValue(mFence) < fence)
+	{
+		ThrowIfFailed(mFence->lpVtbl->SetEventOnCompletion(mFence, fence, mHandleEvent));
+		WaitForSingleObject(mHandleEvent, INFINITE);
+	}
+
+//	mframeIndex = mSwapChain->lpVtbl->GetCurrentBackBufferIndex(mSwapChain);
+}
+
+
+D3D12_CPU_DESCRIPTOR_HANDLE OffsetDescriptor(D3D12_CPU_DESCRIPTOR_HANDLE handle, INT offsetInDescriptors, UINT descriptorIncrementSize)
+{
+	handle.ptr += offsetInDescriptors * descriptorIncrementSize;
+	return handle;
+}
 
 
 // makes the applicaton behave well with windows
 // allows to remove some system calls to reduce size
 #define WELLBEHAVIOUR
 
-#if defined(WELLBEHAVIOUR)
+// for demos we can use an entry point that occupies less "space" then the regular entry point
+// if you change back to the regualar entry point you need to remove winmain in Visual Studio 2013 under Linker -> Advanced Entrypoint 
+//#define REGULARENTRYPOINT
+
+#if defined(REGULARENTRYPOINT)
+
 
 // this is a simplified entry point ...
 void __stdcall WinMainCRTStartup()
@@ -153,63 +207,51 @@ __declspec( naked )  void __cdecl winmain()
 	}
 #endif
 
-	CreateDXGIFactory1((REFIID) &IID_IDXGIFactory1, (LPVOID*) (&pFactory));
-
+	IDXGIFactory4* pFactory;
+	ThrowIfFailed(CreateDXGIFactory1((REFIID)&IID_IDXGIFactory4, (LPVOID*)(&pFactory)));
 
 	// Attempt to create a hardware based device first.  If that fails, 
 	// then fallback to WARP/software.
-	HRESULT hardware_driver = D3D12CreateDevice(NULL, D3D_FEATURE_LEVEL_11_0, (REFIID) &IID_ID3D12Device, (LPVOID*) (&mDevice));
+	HRESULT hardware_driver = D3D12CreateDevice(NULL, D3D_FEATURE_LEVEL_11_0, (REFIID)&IID_ID3D12Device, (LPVOID*)(&mDevice));
 
-	if ((hardware_driver != S_OK))	
+
+#ifdef _DEBUG
+	if (!SUCCEEDED(hardware_driver))
 	{
-		pFactory->lpVtbl->EnumWarpAdapter(pFactory, (REFIID) &IID_IDXGIFactory4, (LPVOID*) (&pWarpAdapter));
+		IDXGIAdapter* pWarpAdapter;
+		ThrowIfFailed(pFactory->lpVtbl->EnumWarpAdapter(pFactory, (REFIID)&IID_IDXGIAdapter3, (LPVOID*)(&pWarpAdapter)));
 
-		D3D12CreateDevice((IUnknown *)pWarpAdapter,
+		ThrowIfFailed(D3D12CreateDevice(
+			pWarpAdapter,
 			D3D_FEATURE_LEVEL_11_0,
-			(REFIID) &IID_ID3D12Device, (LPVOID*) (&mDevice));
+			(REFIID)&IID_ID3D12Device, (LPVOID*)(&mDevice)
+			));
 	}
+#endif
 
 	static D3D12_COMMAND_QUEUE_DESC queueDesc;
 	queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
 	queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
-	mDevice->lpVtbl->CreateCommandQueue(mDevice, &queueDesc, (REFIID) &IID_ID3D12CommandQueue, (LPVOID*) (&mCommandQueue));
+	ThrowIfFailed(mDevice->lpVtbl->CreateCommandQueue(mDevice, &queueDesc, (REFIID)&IID_ID3D12CommandQueue, (LPVOID*)(&mCommandQueue)));
 
-/*
-	const static DXGI_SWAP_CHAIN_DESC sd = { { WINWIDTH, WINHEIGHT, { 60, 1 }, DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED, DXGI_MODE_SCALING_UNSPECIFIED }, { 1, 0 }, DXGI_USAGE_RENDER_TARGET_OUTPUT, 1, NULL, TRUE, DXGI_SWAP_EFFECT_FLIP_DISCARD, 0 };
-*/
-
-	/*
-	// Describe the swap chain.
-	DXGI_SWAP_CHAIN_DESC descSwapChain;
-	descSwapChain.BufferCount = 2;
-	descSwapChain.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-	descSwapChain.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-	descSwapChain.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
-	descSwapChain.OutputWindow = hWnd;
-	descSwapChain.SampleDesc.Count = 1;
-	descSwapChain.Windowed = TRUE;
-	*/
 	// Describe the swap chain.
 	static DXGI_SWAP_CHAIN_DESC descSwapChain;
+	descSwapChain.BufferCount = FRAMECOUNT;
 	descSwapChain.BufferDesc.Width = WINWIDTH;
 	descSwapChain.BufferDesc.Height = WINHEIGHT;
-	descSwapChain.BufferDesc.RefreshRate.Denominator = 60;
-	descSwapChain.BufferDesc.RefreshRate.Numerator = 1;
 	descSwapChain.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-	descSwapChain.BufferDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
-	descSwapChain.BufferDesc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
-	descSwapChain.SampleDesc.Count = 1;
-	descSwapChain.SampleDesc.Quality = 0;
 	descSwapChain.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-	descSwapChain.BufferCount = 2;
-	descSwapChain.OutputWindow = hWnd;
-	descSwapChain.Windowed = TRUE;
 	descSwapChain.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
-	descSwapChain.Flags = 0;
+	descSwapChain.OutputWindow = hWnd;
+	descSwapChain.SampleDesc.Count = 1;
+	descSwapChain.Windowed = TRUE;
 	
-	pFactory->lpVtbl->CreateSwapChain(pFactory, (IUnknown *)mCommandQueue,		// Swap chain needs the queue so that it can force a flush on it.
+	pFactory->lpVtbl->CreateSwapChain(pFactory, mCommandQueue,		// Swap chain needs the queue so that it can force a flush on it.
 									  &descSwapChain,
 									  &mSwapChain);
+
+//	mframeIndex = mSwapChain->lpVtbl->GetCurrentBackBufferIndex(mSwapChain);
+
 
 	// root signature here
 	// do not use a root signature ... we do not have shaders here 
@@ -218,44 +260,58 @@ __declspec( naked )  void __cdecl winmain()
 	// do not use a pipeline state object ... we do not have shaders
 	mPSO = NULL;
 
-	// render target here 
 	// Describe and create a render target view (RTV) descriptor heap.
-	D3D12_DESCRIPTOR_HEAP_DESC descHeap;
-	descHeap.NumDescriptors = 1;
+	static D3D12_DESCRIPTOR_HEAP_DESC descHeap;
+	descHeap.NumDescriptors = FRAMECOUNT;
 	descHeap.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
-	descHeap.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-	descHeap.NodeMask = 0;
-	mDevice->lpVtbl->CreateDescriptorHeap(mDevice, &descHeap, (REFIID) &IID_ID3D12DescriptorHeap, (LPVOID*) (&mDescriptorHeap));
+	descHeap.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE; // RTV is not shader visible
+	ThrowIfFailed(mDevice->lpVtbl->CreateDescriptorHeap(mDevice, &descHeap, (REFIID)&IID_ID3D12DescriptorHeap, (LPVOID*)(&mDescriptorHeap)));
 
-//	mDescriptorHeap->lpVtbl->GetDevice(mDescriptorHeap, (REFIID) &IID_ID3D12Device, (LPVOID*) (&mDevice2));
-//	mDescriptorHeap->lpVtbl->SetName(mDescriptorHeap, "test");
+	mrtvDescriptorIncrSize = mDevice->lpVtbl->GetDescriptorHandleIncrementSize(mDevice, D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 
-	// seems to be a bug in GetDesc, GetCPU/GPUDescriptorHandle
-//	descHeap2 = mDescriptorHeap->lpVtbl->GetDesc(mDescriptorHeap);
+#ifdef _DEBUG
+	static D3D12_DESCRIPTOR_HEAP_DESC debugdescHeap;
+	debugdescHeap = mDescriptorHeap->lpVtbl->GetDesc(mDescriptorHeap);
+#endif
 
+	// Create frame resources
+	D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle;
+	rtvHandle = mDescriptorHeap->lpVtbl->GetCPUDescriptorHandleForHeapStart(mDescriptorHeap);
 
-	// Create render target view (RTV)
-	// the REFIID is probably wrong ...
-	mSwapChain->lpVtbl->GetBuffer(mSwapChain, 0, (REFIID) &IID_ID3D12Resource, (LPVOID*) (&mRenderTarget));
-
-
-	D3D12_CPU_DESCRIPTOR_HANDLE DestDescriptor;
-	DestDescriptor = mDescriptorHeap->lpVtbl->GetCPUDescriptorHandleForHeapStart(mDescriptorHeap);
-	mDevice->lpVtbl->CreateRenderTargetView(mDevice, mRenderTarget, NULL, DestDescriptor);
+	// Create a RTV for each frame.
+	for (UINT n = 0; n < FRAMECOUNT; n++)
+	{
+		ThrowIfFailed(mSwapChain->lpVtbl->GetBuffer(mSwapChain, n, (REFIID)&IID_ID3D12Resource, (LPVOID*)(&mRenderTarget[n]))); //IID_PPV_ARGS(&m_renderTargets[n])));
+		mDevice->lpVtbl->CreateRenderTargetView(mDevice, mRenderTarget[n], NULL, rtvHandle);
+		rtvHandle = OffsetDescriptor(rtvHandle, 1, mrtvDescriptorIncrSize);
+	}
 
 	// allocate memory for a command list and create one
-	mDevice->lpVtbl->CreateCommandAllocator(mDevice, D3D12_COMMAND_LIST_TYPE_DIRECT, (REFIID) &IID_ID3D12CommandAllocator, (LPVOID*) (&mCommandAllocator));
-	mDevice->lpVtbl->CreateCommandList(mDevice, 0, D3D12_COMMAND_LIST_TYPE_DIRECT, mCommandAllocator, mPSO, (REFIID) &IID_ID3D12CommandList, (LPVOID*) (&mCommandList));
+	mDevice->lpVtbl->CreateCommandAllocator(mDevice, D3D12_COMMAND_LIST_TYPE_DIRECT, (REFIID)&IID_ID3D12CommandAllocator, (LPVOID*)(&mCommandAllocator));
+	mDevice->lpVtbl->CreateCommandList(mDevice, 0, D3D12_COMMAND_LIST_TYPE_DIRECT, mCommandAllocator, mPSO, (REFIID)&IID_ID3D12CommandList, (LPVOID*)(&mCommandList));
+
+	// Command lists are created in the recording state, but there is nothing
+	// to record yet. The main loop expects it to be closed, so close it now.
+	ThrowIfFailed(mCommandList->lpVtbl->Close(mCommandList));
 
 
+	// Create and initialize the fence.
+	ThrowIfFailed(mDevice->lpVtbl->CreateFence(mDevice, 0, D3D12_FENCE_FLAG_NONE, (REFIID)&IID_ID3D12Fence, (LPVOID*)(&mFence)));
+	mCurrentFence = 1;
+
+
+	// Create an event handle to use for frame synchronization.
+	mHandleEvent = CreateEventEx(NULL, FALSE, FALSE, EVENT_ALL_ACCESS);
 
 	// setup timer 
 	StartTime = GetTickCount();
-	CurrentTime = 0;	
+	CurrentTime = 0;
 
 	// set the game loop to running by default
 	BRunning = TRUE;
 	MSG msg;
+
+	mframeIndex = 0;
 
 	while (BRunning)
 	{
@@ -270,24 +326,81 @@ __declspec( naked )  void __cdecl winmain()
 		if (CurrentTime > 3300 || GetAsyncKeyState(VK_ESCAPE)) 
 			BRunning = FALSE;
 
-   		static const float ClearColor[4] = { 0.0f, 0.125f, 0.3f, 1.0f };
-//		pImmediateContext->lpVtbl->ClearRenderTargetView(pImmediateContext, pRenderTargetView, ClearColor );
+		// Command list allocators can only be reset when the associated 
+		// command lists have finished execution on the GPU; apps should use 
+		// fences to determine GPU execution progress.
+		ThrowIfFailed(mCommandAllocator->lpVtbl->Reset(mCommandAllocator));
 
-		// 
-//		pSwapChain->lpVtbl->Present( pSwapChain, 0, 0 );
+		// However, when ExecuteCommandList() is called on a particular command 
+		// list, that command list can then be reset at any time and must be before 
+		// re-recording.
+		ThrowIfFailed(mCommandList->lpVtbl->Reset(mCommandList, mCommandAllocator, mPSO));
+
+		mframeIndex++;
+		mframeIndex = (mframeIndex >= 1) ? 0 : mframeIndex;
+
+		// Indicate that the back buffer will be used as a render target.
+		const D3D12_RESOURCE_BARRIER barrierRTAsTexture =
+		{
+			D3D12_RESOURCE_BARRIER_TYPE_TRANSITION,
+			D3D12_RESOURCE_BARRIER_FLAG_NONE,
+			{ mRenderTarget[mframeIndex], D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET }
+		};
+
+		mCommandList->lpVtbl->ResourceBarrier(mCommandList, 1, &barrierRTAsTexture);
+
+		rtvHandle = mDescriptorHeap->lpVtbl->GetCPUDescriptorHandleForHeapStart(mDescriptorHeap);
+		rtvHandle = OffsetDescriptor(rtvHandle, mframeIndex, mrtvDescriptorIncrSize);
+
+		// Record commands.
+		float clearColor[] = { 0.0f, 0.2f, 0.4f, 1.0f };
+		mCommandList->lpVtbl->ClearRenderTargetView(mCommandList, rtvHandle, clearColor, 0, NULL);
+
+		// Indicate that the back buffer will now be used to present.
+		const D3D12_RESOURCE_BARRIER barrierRTForPresent =
+		{
+			D3D12_RESOURCE_BARRIER_TYPE_TRANSITION,
+			D3D12_RESOURCE_BARRIER_FLAG_NONE,
+			{ mRenderTarget[mframeIndex], D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT }
+		};
+
+		mCommandList->lpVtbl->ResourceBarrier(mCommandList, 1, &barrierRTForPresent);
+
+		ThrowIfFailed(mCommandList->lpVtbl->Close(mCommandList));
+
+		// Execute the command list.
+		ID3D12CommandList* ppCommandLists[] = { mCommandList };
+		mCommandQueue->lpVtbl->ExecuteCommandLists(mCommandQueue, _countof(ppCommandLists), ppCommandLists);
+
+		// Present and move to the next back buffer.
+		ThrowIfFailed(mSwapChain->lpVtbl->Present(mSwapChain, 1, 0));
+		mframeIndex = (1 + mframeIndex) % FRAMECOUNT;
+
+		WaitForPreviousFrame();
 	}
 
-	// release all D3D device related resources
-#if defined(WELLBEHAVIOUR)
-/*	    pImmediateContext->lpVtbl->ClearState(pImmediateContext);
-	    pd3dDevice->lpVtbl->Release(pd3dDevice);
-	    pRenderTargetView->lpVtbl->Release(pRenderTargetView);
-	    pSwapChain->lpVtbl->Release(pSwapChain);	 
-	    pBackBuffer->lpVtbl->Release(pBackBuffer);	
-		*/
-#endif
+
+	// Wait for the GPU to be done with all resources.
+	WaitForPreviousFrame();
 
 #if defined(WELLBEHAVIOUR)
+	// I think I need to release a lot of stuff here ..
+	mDevice->lpVtbl->Release(mDevice);
+	mSwapChain->lpVtbl->Release(mSwapChain);
+	// Create a RTV for each frame.
+	for (UINT n = 0; n < FRAMECOUNT; n++)
+	{
+		mRenderTarget[n]->lpVtbl->Release(mRenderTarget[n]);
+	}
+	mCommandAllocator->lpVtbl->Release(mCommandAllocator);
+	mCommandQueue->lpVtbl->Release(mCommandQueue);
+	mDescriptorHeap->lpVtbl->Release(mDescriptorHeap);
+	mCommandList->lpVtbl->Release(mCommandList);
+	//		mPSO->Release();
+	mFence->lpVtbl->Release(mFence);
+#endif
+
+#if defined(REGULARENTRYPOINT)
     return (int) msg.wParam;
 #else
 	}

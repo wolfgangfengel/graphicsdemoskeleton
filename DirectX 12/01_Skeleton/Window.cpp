@@ -23,14 +23,13 @@
 #define WINPOSX 200 
 #define WINPOSY 200
 
-int mIndexLastSwapBuf = 0;
-int cNumSwapBufs = 2;
+#define FRAMECOUNT 2
 
 
 // Pipeline objects.
 IDXGISwapChain* mSwapChain;
 ID3D12Device* mDevice;
-ID3D12Resource* mRenderTarget;
+ID3D12Resource* mRenderTarget[FRAMECOUNT];
 ID3D12CommandAllocator* mCommandAllocator;
 ID3D12CommandQueue* mCommandQueue;
 ID3D12DescriptorHeap* mDescriptorHeap;
@@ -42,20 +41,21 @@ HANDLE mHandleEvent;
 ID3D12Fence* mFence;
 UINT64 mCurrentFence;
 
+UINT mrtvDescriptorIncrSize;
+UINT mframeIndex;
+
 EXTERN_C int _fltused = 0; // to get rid of the unresolved symbol __ftlused error
 
 
-#if DEBUG
 inline void ThrowIfFailed(HRESULT hr)
 {
-	if (FAILED(hr))
-	{
-		throw;
-	}
-}
-#else
-inline void ThrowIfFailed(HRESULT hr){}
+#if defined(_DEBUG)
+	if (hr != S_OK)
+		MessageBoxA(NULL, "Function call failed", "Error", MB_OK | MB_ICONERROR);
 #endif
+}
+
+
 void WaitForPreviousFrame()
 {
 	// WAITING FOR THE FRAME TO COMPLETE BEFORE CONTINUING IS NOT BEST PRACTICE.
@@ -73,6 +73,14 @@ void WaitForPreviousFrame()
 		ThrowIfFailed(mFence->SetEventOnCompletion(fence, mHandleEvent));
 		WaitForSingleObject(mHandleEvent, INFINITE);
 	}
+
+//	mframeIndex = mSwapChain->GetCurrentBackBufferIndex();
+}
+
+D3D12_CPU_DESCRIPTOR_HANDLE OffsetDescriptor(D3D12_CPU_DESCRIPTOR_HANDLE handle, INT offsetInDescriptors, UINT descriptorIncrementSize)
+{
+	handle.ptr += offsetInDescriptors * descriptorIncrementSize;
+	return handle;
 }
 
 // allows to remove some system calls to reduce size -> application doesn't comply with windows standard behaviour anymore, so be careful
@@ -139,7 +147,7 @@ __declspec(naked)  void __cdecl winmain()
 		);
 
 
-#if _DEBUG
+#ifdef _DEBUG
 	if (!SUCCEEDED(hardware_driver))
 	{
 		IDXGIAdapter* pWarpAdapter;
@@ -161,7 +169,9 @@ __declspec(naked)  void __cdecl winmain()
 
 		// Describe the swap chain.
 		static DXGI_SWAP_CHAIN_DESC descSwapChain;
-		descSwapChain.BufferCount = 2;
+		descSwapChain.BufferCount = FRAMECOUNT;
+		descSwapChain.BufferDesc.Width = WINWIDTH;
+		descSwapChain.BufferDesc.Height = WINHEIGHT;
 		descSwapChain.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
 		descSwapChain.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
 		descSwapChain.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
@@ -175,6 +185,8 @@ __declspec(naked)  void __cdecl winmain()
 			&mSwapChain
 			));
 
+//		mframeIndex = mSwapChain->GetCurrentBackBufferIndex();
+
 
 		// root signature here
 		// do not use a root signature ... we do not have shaders here 
@@ -186,20 +198,30 @@ __declspec(naked)  void __cdecl winmain()
 
 		// Describe and create a render target view (RTV) descriptor heap.
 		static D3D12_DESCRIPTOR_HEAP_DESC descHeap ;
-		descHeap.NumDescriptors = 1;
+		descHeap.NumDescriptors = FRAMECOUNT;
 		descHeap.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
 		descHeap.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 		ThrowIfFailed(mDevice->CreateDescriptorHeap(&descHeap, IID_PPV_ARGS(&mDescriptorHeap)));
 
-		// Create render target view (RTV).
-		ThrowIfFailed(mSwapChain->GetBuffer(0, IID_PPV_ARGS(&mRenderTarget)));
-		mDevice->CreateRenderTargetView(mRenderTarget, nullptr, mDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
+		mrtvDescriptorIncrSize = mDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 
+
+		// Create render target view (RTV).
+		D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle;
+		rtvHandle = mDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
+
+		// Create a RTV for each frame.
+		for (UINT n = 0; n < FRAMECOUNT; n++)
+		{
+			ThrowIfFailed(mSwapChain->GetBuffer(n, IID_PPV_ARGS(&mRenderTarget[n])));
+			mDevice->CreateRenderTargetView(mRenderTarget[n], nullptr, rtvHandle);
+			rtvHandle = OffsetDescriptor(rtvHandle, 1, mrtvDescriptorIncrSize);
+//			rtvHandle.Offset(1, mrtvDescriptorIncrSize);
+		}
 
 		// allocate memory for a command list and create one
 		ThrowIfFailed(mDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&mCommandAllocator)));
 		ThrowIfFailed(mDevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, mCommandAllocator, mPSO, IID_PPV_ARGS(&mCommandList)));
-
 
 		// Create and initialize the fence.
 		ThrowIfFailed(mDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&mFence)));
@@ -218,6 +240,8 @@ __declspec(naked)  void __cdecl winmain()
 		BRunning = TRUE;
 		MSG msg;
 
+		mframeIndex = 0;
+		
 		while (BRunning)
 		{
 			// Just remove the message
@@ -229,7 +253,6 @@ __declspec(naked)  void __cdecl winmain()
 			// go out of game loop and shutdown
 			if (CurrentTime > 3300 || GetAsyncKeyState(VK_ESCAPE))
 				BRunning = FALSE;
-
 
 
 			// Command list allocators can only be reset when the associated 
@@ -247,21 +270,26 @@ __declspec(naked)  void __cdecl winmain()
 			{
 				D3D12_RESOURCE_BARRIER_TYPE_TRANSITION,
 				D3D12_RESOURCE_BARRIER_FLAG_NONE,
-				{ mRenderTarget, D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET }
+				{ mRenderTarget[mframeIndex], D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET }
 			};
 
 			mCommandList->ResourceBarrier(1, &barrierRTAsTexture);
 
+//			CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_rtvHeap->GetCPUDescriptorHandleForHeapStart(), m_frameIndex, m_rtvDescriptorSize);
+			rtvHandle = mDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
+			rtvHandle = OffsetDescriptor(rtvHandle, mframeIndex, mrtvDescriptorIncrSize);
+
+
 			// Record commands.
 			float clearColor [] = { 0.0f, 0.2f, 0.4f, 1.0f };
-			mCommandList->ClearRenderTargetView(mDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), clearColor, 0, nullptr);
+			mCommandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
 
 			// Indicate that the back buffer will now be used to present.
 			const D3D12_RESOURCE_BARRIER barrierRTForPresent =
 			{
 				D3D12_RESOURCE_BARRIER_TYPE_TRANSITION,
 				D3D12_RESOURCE_BARRIER_FLAG_NONE,
-				{ mRenderTarget, D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT }
+				{ mRenderTarget[mframeIndex], D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT }
 			};
 
 			mCommandList->ResourceBarrier(1, &barrierRTForPresent);
@@ -274,26 +302,30 @@ __declspec(naked)  void __cdecl winmain()
 
 			// Present and move to the next back buffer.
 			ThrowIfFailed(mSwapChain->Present(1, 0));
-			mIndexLastSwapBuf = (1 + mIndexLastSwapBuf) % cNumSwapBufs;
-			mSwapChain->GetBuffer(mIndexLastSwapBuf, IID_PPV_ARGS(&mRenderTarget));
-			mDevice->CreateRenderTargetView(mRenderTarget, nullptr, mDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
+			mframeIndex = (1 + mframeIndex) % FRAMECOUNT;
 
 			WaitForPreviousFrame();
 		}
-
 
 		// Wait for the GPU to be done with all resources.
 		WaitForPreviousFrame();
 
 #if defined(WELLBEHAVIOUR)
-		// I think I need to release a lot of stuff here ..
 		mDevice->Release();
 		mSwapChain->Release();
-		mRenderTarget->Release();
+
+		// Create a RTV for each frame.
+		for (UINT n = 0; n < FRAMECOUNT; n++)
+		{
+			mRenderTarget[n]->Release();
+		}
+
 		mCommandAllocator->Release();
 		mCommandQueue->Release();
 		mDescriptorHeap->Release();
 		mCommandList->Release();
+//		mPSO->Release();
+		mFence->Release();
 #endif
 
 #if defined(REGULARENTRYPOINT)
