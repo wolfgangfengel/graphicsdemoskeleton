@@ -74,6 +74,7 @@ void WaitForPreviousFrame()
 		WaitForSingleObject(mHandleEvent, INFINITE);
 	}
 
+	// would require swap chain 3 interface
 //	mframeIndex = mSwapChain->GetCurrentBackBufferIndex();
 }
 
@@ -275,10 +276,8 @@ __declspec(naked)  void __cdecl winmain()
 
 			mCommandList->ResourceBarrier(1, &barrierRTAsTexture);
 
-//			CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_rtvHeap->GetCPUDescriptorHandleForHeapStart(), m_frameIndex, m_rtvDescriptorSize);
 			rtvHandle = mDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
 			rtvHandle = OffsetDescriptor(rtvHandle, mframeIndex, mrtvDescriptorIncrSize);
-
 
 			// Record commands.
 			float clearColor [] = { 0.0f, 0.2f, 0.4f, 1.0f };

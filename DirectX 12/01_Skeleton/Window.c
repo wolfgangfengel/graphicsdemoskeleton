@@ -15,8 +15,6 @@
 
 
 
-
-
 #define DEFINE_GUIDW(name, l, w1, w2, b1, b2, b3, b4, b5, b6, b7, b8) const GUID DECLSPEC_SELECTANY name = { l, w1, w2, { b1, b2, b3, b4, b5, b6, b7, b8 } }
 //DEFINE_GUIDW(IID_ID3D11Texture2D, 0x6f15aaf2, 0xd208, 0x4e89, 0x9a, 0xb4, 0x48, 0x95, 0x35, 0xd3, 0x4f, 0x9c);
 
@@ -75,7 +73,6 @@ DEFINE_GUIDW(IID_IDXGIAdapter3, 0x645967A4, 0x1392, 0x4310, 0xA7, 0x98, 0x80, 0x
 
 #include <d3d12.h>
 #include <dxgi1_4.h>
-
 
 
 // define the size of the window
@@ -271,12 +268,16 @@ __declspec( naked )  void __cdecl winmain()
 
 #ifdef _DEBUG
 	static D3D12_DESCRIPTOR_HEAP_DESC debugdescHeap;
-	debugdescHeap = mDescriptorHeap->lpVtbl->GetDesc(mDescriptorHeap);
+//	debugdescHeap = mDescriptorHeap->lpVtbl->GetDesc(mDescriptorHeap);
+	// due to lack of C support
+	((void(__stdcall*)(ID3D12DescriptorHeap*, D3D12_DESCRIPTOR_HEAP_DESC*)) mDescriptorHeap->lpVtbl->GetDesc)(mDescriptorHeap, &debugdescHeap);
 #endif
 
 	// Create frame resources
 	D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle;
-	rtvHandle = mDescriptorHeap->lpVtbl->GetCPUDescriptorHandleForHeapStart(mDescriptorHeap);
+//	rtvHandle = mDescriptorHeap->lpVtbl->GetCPUDescriptorHandleForHeapStart(mDescriptorHeap);
+	((void(__stdcall*)(ID3D12DescriptorHeap*, D3D12_CPU_DESCRIPTOR_HANDLE*)) mDescriptorHeap->lpVtbl->GetCPUDescriptorHandleForHeapStart)(mDescriptorHeap, &rtvHandle);
+
 
 	// Create a RTV for each frame.
 	for (UINT n = 0; n < FRAMECOUNT; n++)
@@ -336,8 +337,8 @@ __declspec( naked )  void __cdecl winmain()
 		// re-recording.
 		ThrowIfFailed(mCommandList->lpVtbl->Reset(mCommandList, mCommandAllocator, mPSO));
 
-		mframeIndex++;
-		mframeIndex = (mframeIndex >= 1) ? 0 : mframeIndex;
+//		mframeIndex++;
+//		mframeIndex = (mframeIndex >= 1) ? 0 : mframeIndex;
 
 		// Indicate that the back buffer will be used as a render target.
 		const D3D12_RESOURCE_BARRIER barrierRTAsTexture =
@@ -349,7 +350,9 @@ __declspec( naked )  void __cdecl winmain()
 
 		mCommandList->lpVtbl->ResourceBarrier(mCommandList, 1, &barrierRTAsTexture);
 
-		rtvHandle = mDescriptorHeap->lpVtbl->GetCPUDescriptorHandleForHeapStart(mDescriptorHeap);
+//		rtvHandle = mDescriptorHeap->lpVtbl->GetCPUDescriptorHandleForHeapStart(mDescriptorHeap);
+		((void(__stdcall*)(ID3D12DescriptorHeap*, D3D12_CPU_DESCRIPTOR_HANDLE*)) mDescriptorHeap->lpVtbl->GetCPUDescriptorHandleForHeapStart)(mDescriptorHeap, &rtvHandle);
+
 		rtvHandle = OffsetDescriptor(rtvHandle, mframeIndex, mrtvDescriptorIncrSize);
 
 		// Record commands.
