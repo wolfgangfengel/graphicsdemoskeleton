@@ -167,7 +167,7 @@
       <FloatingPointExceptions>false</FloatingPointExceptions>
       <FavorSizeOrSpeed>Size</FavorSizeOrSpeed>
       <BufferSecurityCheck>false</BufferSecurityCheck>
-      <DisableLanguageExtensions>true</DisableLanguageExtensions>
+      <DisableLanguageExtensions>false</DisableLanguageExtensions>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
       <CompileAsWinRT>false</CompileAsWinRT>
       <EnableEnhancedInstructionSet>NoExtensions</EnableEnhancedInstructionSet>
