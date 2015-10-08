@@ -3,7 +3,7 @@
 // Skeleton Intro Coding
 //
 // by Wolfgang Engel 
-// Last time modified: 09/22/2011 (started sometime in 2003 or maybe much longer ago)
+// Last time modified: 10/08/2015 (started sometime in 2003 or maybe much longer ago)
 //
 ///////////////////////////////////////////////////////////////////////
 #define WIN32_LEAN_AND_MEAN
@@ -16,7 +16,6 @@
 
 
 #define DEFINE_GUIDW(name, l, w1, w2, b1, b2, b3, b4, b5, b6, b7, b8) const GUID DECLSPEC_SELECTANY name = { l, w1, w2, { b1, b2, b3, b4, b5, b6, b7, b8 } }
-//DEFINE_GUIDW(IID_ID3D11Texture2D, 0x6f15aaf2, 0xd208, 0x4e89, 0x9a, 0xb4, 0x48, 0x95, 0x35, 0xd3, 0x4f, 0x9c);
 
 DEFINE_GUIDW(IID_ID3D12Object, 0xc4fec28f, 0x7966, 0x4e95, 0x9f, 0x94, 0xf4, 0x31, 0xcb, 0x56, 0xc3, 0xb8);
 DEFINE_GUIDW(IID_ID3D12DeviceChild, 0x905db94b, 0xa00c, 0x4140, 0x9d, 0xf5, 0x2b, 0x64, 0xca, 0x9e, 0xa3, 0x57);
@@ -28,7 +27,6 @@ DEFINE_GUIDW(IID_ID3D12Resource, 0x696442be, 0xa72e, 0x4059, 0xbc, 0x79, 0x5b, 0
 DEFINE_GUIDW(IID_ID3D12CommandAllocator, 0x6102dee4, 0xaf59, 0x4b09, 0xb9, 0x99, 0xb4, 0x4d, 0x73, 0xf0, 0x9b, 0x24);
 DEFINE_GUIDW(IID_ID3D12Fence, 0x0a753dcf, 0xc4d8, 0x4b91, 0xad, 0xf6, 0xbe, 0x5a, 0x60, 0xd9, 0x5a, 0x76);
 DEFINE_GUIDW(IID_ID3D12PipelineState, 0x765a30f3, 0xf624, 0x4c6f, 0xa8, 0x28, 0xac, 0xe9, 0x48, 0x62, 0x24, 0x45);
-//DEFINE_GUIDW(IID_ID3D12DescriptorHeap,0x8efb471d,0x616c,0x4f49,0x90,0xf7,0x12,0x7b,0xb7,0x63,0xfa,0x51);
 DEFINE_GUIDW(IID_ID3D12DescriptorHeap, 0x8efb471d, 0x616c, 0x4f49, 0x90, 0xf7, 0x12, 0x7b, 0xb7, 0x63, 0xfa, 0x51);
 DEFINE_GUIDW(IID_ID3D12QueryHeap, 0x0d9658ae, 0xed45, 0x469e, 0xa6, 0x1d, 0x97, 0x0e, 0xc5, 0x83, 0xca, 0xb4);
 DEFINE_GUIDW(IID_ID3D12CommandSignature, 0xc36a797c, 0xec80, 0x4f0a, 0x89, 0x85, 0xa7, 0xb2, 0x47, 0x50, 0x82, 0xd1);
@@ -243,7 +241,8 @@ __declspec( naked )  void __cdecl winmain()
 	descSwapChain.SampleDesc.Count = 1;
 	descSwapChain.Windowed = TRUE;
 	
-	pFactory->lpVtbl->CreateSwapChain(pFactory, mCommandQueue,		// Swap chain needs the queue so that it can force a flush on it.
+	pFactory->lpVtbl->CreateSwapChain(pFactory, 
+									  mCommandQueue,		// Swap chain needs the queue so that it can force a flush on it.
 									  &descSwapChain,
 									  &mSwapChain);
 
@@ -266,16 +265,10 @@ __declspec( naked )  void __cdecl winmain()
 
 	mrtvDescriptorIncrSize = mDevice->lpVtbl->GetDescriptorHandleIncrementSize(mDevice, D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 
-#ifdef _DEBUG
-	static D3D12_DESCRIPTOR_HEAP_DESC debugdescHeap;
-//	debugdescHeap = mDescriptorHeap->lpVtbl->GetDesc(mDescriptorHeap);
-	// due to lack of C support
-	((void(__stdcall*)(ID3D12DescriptorHeap*, D3D12_DESCRIPTOR_HEAP_DESC*)) mDescriptorHeap->lpVtbl->GetDesc)(mDescriptorHeap, &debugdescHeap);
-#endif
-
 	// Create frame resources
 	D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle;
 //	rtvHandle = mDescriptorHeap->lpVtbl->GetCPUDescriptorHandleForHeapStart(mDescriptorHeap);
+	// lack of C calling support 
 	((void(__stdcall*)(ID3D12DescriptorHeap*, D3D12_CPU_DESCRIPTOR_HANDLE*)) mDescriptorHeap->lpVtbl->GetCPUDescriptorHandleForHeapStart)(mDescriptorHeap, &rtvHandle);
 
 
@@ -337,9 +330,6 @@ __declspec( naked )  void __cdecl winmain()
 		// re-recording.
 		ThrowIfFailed(mCommandList->lpVtbl->Reset(mCommandList, mCommandAllocator, mPSO));
 
-//		mframeIndex++;
-//		mframeIndex = (mframeIndex >= 1) ? 0 : mframeIndex;
-
 		// Indicate that the back buffer will be used as a render target.
 		const D3D12_RESOURCE_BARRIER barrierRTAsTexture =
 		{
@@ -382,11 +372,10 @@ __declspec( naked )  void __cdecl winmain()
 		WaitForPreviousFrame();
 	}
 
-
+#if defined(WELLBEHAVIOUR)
 	// Wait for the GPU to be done with all resources.
 	WaitForPreviousFrame();
 
-#if defined(WELLBEHAVIOUR)
 	// I think I need to release a lot of stuff here ..
 	mDevice->lpVtbl->Release(mDevice);
 	mSwapChain->lpVtbl->Release(mSwapChain);
