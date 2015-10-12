@@ -39,6 +39,7 @@ DEFINE_GUIDW(IID_ID3D12Device, 0x189819f1, 0x1db6, 0x4b57, 0xbe, 0x54, 0x18, 0x2
 // d3d12sdklayers.h
 DEFINE_GUIDW(DXGI_DEBUG_D3D12, 0xcf59a98c, 0xa950, 0x4326, 0x91, 0xef, 0x9b, 0xba, 0xa1, 0x7b, 0xfd, 0x95);
 
+
 DEFINE_GUIDW(IID_ID3D12Debug, 0x344488b7, 0x6846, 0x474b, 0xb9, 0x89, 0xf0, 0x27, 0x44, 0x82, 0x45, 0xe0);
 DEFINE_GUIDW(IID_ID3D12DebugDevice, 0x3febd6dd, 0x4973, 0x4787, 0x81, 0x94, 0xe4, 0x5f, 0x9e, 0x28, 0x92, 0x3e);
 DEFINE_GUIDW(IID_ID3D12DebugCommandQueue, 0x09e0bf36, 0x54ac, 0x484f, 0x88, 0x47, 0x4b, 0xae, 0xea, 0xb6, 0x05, 0x3a);
@@ -94,13 +95,14 @@ ID3D12GraphicsCommandList* mCommandList;
 // Synchronization objects.
 HANDLE mHandleEvent;
 ID3D12Fence* mFence;
-UINT64 mCurrentFence;
+static UINT64 mCurrentFence;
 
-UINT mrtvDescriptorIncrSize;
-UINT mframeIndex;
+static UINT mrtvDescriptorIncrSize;
+static UINT mframeIndex;
 
+#if defined(_DEBUG)
 EXTERN_C int _fltused = 0; // to get rid of the unresolved symbol __ftlused error
-
+#endif
 
 inline void ThrowIfFailed(HRESULT hr) 
 { 
@@ -130,14 +132,6 @@ void WaitForPreviousFrame()
 
 //	mframeIndex = mSwapChain->lpVtbl->GetCurrentBackBufferIndex(mSwapChain);
 }
-
-
-D3D12_CPU_DESCRIPTOR_HANDLE OffsetDescriptor(D3D12_CPU_DESCRIPTOR_HANDLE handle, INT offsetInDescriptors, UINT descriptorIncrementSize)
-{
-	handle.ptr += offsetInDescriptors * descriptorIncrementSize;
-	return handle;
-}
-
 
 // makes the applicaton behave well with windows
 // allows to remove some system calls to reduce size
@@ -277,7 +271,7 @@ __declspec( naked )  void __cdecl winmain()
 	{
 		ThrowIfFailed(mSwapChain->lpVtbl->GetBuffer(mSwapChain, n, (REFIID)&IID_ID3D12Resource, (LPVOID*)(&mRenderTarget[n]))); //IID_PPV_ARGS(&m_renderTargets[n])));
 		mDevice->lpVtbl->CreateRenderTargetView(mDevice, mRenderTarget[n], NULL, rtvHandle);
-		rtvHandle = OffsetDescriptor(rtvHandle, 1, mrtvDescriptorIncrSize);
+		rtvHandle.ptr += mrtvDescriptorIncrSize;
 	}
 
 	// allocate memory for a command list and create one
@@ -303,9 +297,7 @@ __declspec( naked )  void __cdecl winmain()
 
 	// set the game loop to running by default
 	BRunning = TRUE;
-	MSG msg;
-
-	mframeIndex = 0;
+	static MSG msg;
 
 	while (BRunning)
 	{
@@ -331,7 +323,7 @@ __declspec( naked )  void __cdecl winmain()
 		ThrowIfFailed(mCommandList->lpVtbl->Reset(mCommandList, mCommandAllocator, mPSO));
 
 		// Indicate that the back buffer will be used as a render target.
-		const D3D12_RESOURCE_BARRIER barrierRTAsTexture =
+		D3D12_RESOURCE_BARRIER barrierRTAsTexture =
 		{
 			D3D12_RESOURCE_BARRIER_TYPE_TRANSITION,
 			D3D12_RESOURCE_BARRIER_FLAG_NONE,
@@ -343,14 +335,15 @@ __declspec( naked )  void __cdecl winmain()
 //		rtvHandle = mDescriptorHeap->lpVtbl->GetCPUDescriptorHandleForHeapStart(mDescriptorHeap);
 		((void(__stdcall*)(ID3D12DescriptorHeap*, D3D12_CPU_DESCRIPTOR_HANDLE*)) mDescriptorHeap->lpVtbl->GetCPUDescriptorHandleForHeapStart)(mDescriptorHeap, &rtvHandle);
 
-		rtvHandle = OffsetDescriptor(rtvHandle, mframeIndex, mrtvDescriptorIncrSize);
+		rtvHandle.ptr += mframeIndex * mrtvDescriptorIncrSize;
+
 
 		// Record commands.
 		float clearColor[] = { 0.0f, 0.2f, 0.4f, 1.0f };
 		mCommandList->lpVtbl->ClearRenderTargetView(mCommandList, rtvHandle, clearColor, 0, NULL);
 
 		// Indicate that the back buffer will now be used to present.
-		const D3D12_RESOURCE_BARRIER barrierRTForPresent =
+		D3D12_RESOURCE_BARRIER barrierRTForPresent =
 		{
 			D3D12_RESOURCE_BARRIER_TYPE_TRANSITION,
 			D3D12_RESOURCE_BARRIER_FLAG_NONE,
