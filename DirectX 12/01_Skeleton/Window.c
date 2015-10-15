@@ -83,7 +83,8 @@ DEFINE_GUIDW(IID_IDXGIAdapter3, 0x645967A4, 0x1392, 0x4310, 0xA7, 0x98, 0x80, 0x
 #define FRAMECOUNT 2
 
 // Pipeline objects.
-IDXGISwapChain3* mSwapChain;
+IDXGISwapChain* mSwapChain;
+IDXGISwapChain3* mSwapChain3;
 ID3D12Device* mDevice;
 ID3D12Resource* mRenderTarget[FRAMECOUNT];
 ID3D12CommandAllocator* mCommandAllocator;
@@ -93,7 +94,7 @@ ID3D12PipelineState* mPSO;
 ID3D12GraphicsCommandList* mCommandList;
 
 // Synchronization objects.
-HANDLE mHandleEvent;
+HANDLE mfenceEvent;
 ID3D12Fence* mFence;
 static UINT64 mCurrentFence;
 
@@ -126,11 +127,11 @@ void WaitForPreviousFrame()
 	// Wait until the previous frame is finished.
 	if (mFence->lpVtbl->GetCompletedValue(mFence) < fence)
 	{
-		ThrowIfFailed(mFence->lpVtbl->SetEventOnCompletion(mFence, fence, mHandleEvent));
-		WaitForSingleObject(mHandleEvent, INFINITE);
+		ThrowIfFailed(mFence->lpVtbl->SetEventOnCompletion(mFence, fence, mfenceEvent));
+		WaitForSingleObject(mfenceEvent, INFINITE);
 	}
 
-//	mframeIndex = mSwapChain->lpVtbl->GetCurrentBackBufferIndex(mSwapChain);
+	mframeIndex = mSwapChain3->lpVtbl->GetCurrentBackBufferIndex(mSwapChain3);
 }
 
 // makes the applicaton behave well with windows
@@ -239,9 +240,8 @@ __declspec( naked )  void __cdecl winmain()
 									  mCommandQueue,		// Swap chain needs the queue so that it can force a flush on it.
 									  &descSwapChain,
 									  &mSwapChain);
-
-//	mframeIndex = mSwapChain->lpVtbl->GetCurrentBackBufferIndex(mSwapChain);
-
+	
+	mSwapChain->lpVtbl->QueryInterface(mSwapChain, (REFIID)&IID_IDXGISwapChain3, (LPVOID*)(&mSwapChain3));
 
 	// root signature here
 	// do not use a root signature ... we do not have shaders here 
@@ -262,7 +262,7 @@ __declspec( naked )  void __cdecl winmain()
 	// Create frame resources
 	D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle;
 //	rtvHandle = mDescriptorHeap->lpVtbl->GetCPUDescriptorHandleForHeapStart(mDescriptorHeap);
-	// lack of C calling support 
+	// bug in C calling support in DirectX 12
 	((void(__stdcall*)(ID3D12DescriptorHeap*, D3D12_CPU_DESCRIPTOR_HANDLE*)) mDescriptorHeap->lpVtbl->GetCPUDescriptorHandleForHeapStart)(mDescriptorHeap, &rtvHandle);
 
 
@@ -289,7 +289,9 @@ __declspec( naked )  void __cdecl winmain()
 
 
 	// Create an event handle to use for frame synchronization.
-	mHandleEvent = CreateEventEx(NULL, FALSE, FALSE, EVENT_ALL_ACCESS);
+	mfenceEvent = CreateEventEx(NULL, FALSE, FALSE, EVENT_ALL_ACCESS);
+
+	// in a bigger app you want to wait here until all the assets are uploaded -> WaitForPreviousFrame()
 
 	// setup timer 
 	StartTime = GetTickCount();
@@ -332,6 +334,7 @@ __declspec( naked )  void __cdecl winmain()
 
 		mCommandList->lpVtbl->ResourceBarrier(mCommandList, 1, &barrierRTAsTexture);
 
+		// bug in DirectX 12 ... missing C calling convention support
 //		rtvHandle = mDescriptorHeap->lpVtbl->GetCPUDescriptorHandleForHeapStart(mDescriptorHeap);
 		((void(__stdcall*)(ID3D12DescriptorHeap*, D3D12_CPU_DESCRIPTOR_HANDLE*)) mDescriptorHeap->lpVtbl->GetCPUDescriptorHandleForHeapStart)(mDescriptorHeap, &rtvHandle);
 
@@ -360,7 +363,7 @@ __declspec( naked )  void __cdecl winmain()
 
 		// Present and move to the next back buffer.
 		ThrowIfFailed(mSwapChain->lpVtbl->Present(mSwapChain, 1, 0));
-		mframeIndex = (1 + mframeIndex) % FRAMECOUNT;
+	//	mframeIndex = (1 + mframeIndex) % FRAMECOUNT;
 
 		WaitForPreviousFrame();
 	}
@@ -369,10 +372,12 @@ __declspec( naked )  void __cdecl winmain()
 	// Wait for the GPU to be done with all resources.
 	WaitForPreviousFrame();
 
-	// I think I need to release a lot of stuff here ..
+	// close the fence event
+	CloseHandle(mfenceEvent);
+
 	mDevice->lpVtbl->Release(mDevice);
 	mSwapChain->lpVtbl->Release(mSwapChain);
-	// Create a RTV for each frame.
+	// release all the render targets
 	for (UINT n = 0; n < FRAMECOUNT; n++)
 	{
 		mRenderTarget[n]->lpVtbl->Release(mRenderTarget[n]);

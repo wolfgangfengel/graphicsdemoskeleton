@@ -14,7 +14,9 @@
 #include <rpcsal.h>
 
 #define DEFINE_GUIDW(name, l, w1, w2, b1, b2, b3, b4, b5, b6, b7, b8) const GUID DECLSPEC_SELECTANY name = { l, w1, w2, { b1, b2,  b3,  b4,  b5,  b6,  b7,  b8 } }
-DEFINE_GUIDW(IID_ID3D11Texture2D,0x6f15aaf2,0xd208,0x4e89,0x9a,0xb4,0x48,0x95,0x35,0xd3,0x4f,0x9c);
+//DEFINE_GUIDW(IID_ID3D11Texture2D,0x6f15aaf2,0xd208,0x4e89,0x9a,0xb4,0x48,0x95,0x35,0xd3,0x4f,0x9c);
+DEFINE_GUIDW(IID_ID3D11Texture2D, 0x6f15aaf2, 0xd208, 0x4e89, 0x9a, 0xb4, 0x48, 0x95, 0x35, 0xd3, 0x4f, 0x9c);
+DEFINE_GUIDW(IID_ID3D11Resource, 0xdc8e63f3, 0xd12b, 0x4952, 0xb4, 0x7b, 0x5e, 0x45, 0x02, 0x6a, 0x86, 0x2d);
 
 #include <d3d11.h>
 
@@ -105,7 +107,7 @@ __declspec( naked )  void __cdecl winmain()
 			NULL,					// might fail with two adapters in machine
 			D3D_DRIVER_TYPE_HARDWARE,
 			NULL, 
-			D3D11_CREATE_DEVICE_DEBUG,
+			D3D11_CREATE_DEVICE_SINGLETHREADED,
 			NULL,
 			0,
 			D3D11_SDK_VERSION,
