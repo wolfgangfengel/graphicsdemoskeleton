@@ -4,12 +4,25 @@ CRINKLER - Compressing linker for Windows specialized for 4k intros
 Aske Simon Christensen "Blueberry/Loonies"
 Rune L. H. Stubbe "Mentor/TBC"
 
-Version 1.4 (January 19, 2013)
+Version 2.0 (July 28, 2015)
 
 
 
 VERSION HISTORY
 ---------------
+28.07.15: 2.0:  /TINYHEADER option: smaller decompressor for 1k intros.
+                /TINYIMPORT option: smaller import code for 1k intros.
+                /EXPORT option to export code and data symbols.
+                /SATURATE option to saturate context counters.
+                /FALLBACKDLL option for when a DLL is not available.
+                /UNALIGNCODE option to set alignment of all code to 1.
+                Support for /REPLACEDLL during recompression.
+                Consistent size between model estimation and reordering.
+                Header size reduced by 2 bytes.
+                Print previous size of output file.
+                Accept version specifier after /SUBSYSTEM value.
+                Switched from Intel OpenMP to MSVC concurrency API.
+
 19.01.13: 1.4:  Output EXE files work with recent NVIDIA drivers.
                 New zero-section header layout saving around 30-50 bytes.
                 Forwarded RVA imports supported via link-time forwarding.
@@ -172,12 +185,12 @@ COMPATIBILITY
 
 The goal of Crinkler is for the produced EXE files to be compatible
 with all widely used Windows versions and configurations. As of
-version 1.4, the EXE files produced by Crinkler are, to the best of
-our knowledge, compatible with Windows XP, Windows Vista, Windows 7
-and Windows 8, both 32 bit and 64 bit versions. They are compatible
-with Data Execution Prevention and with execution hooks that inspect
-the import or export table of launched executables (graphics drivers
-are known to do this).
+version 2.0, the EXE files produced by Crinkler are, to the best of
+our knowledge, compatible with Windows XP, Windows Vista, Windows 7,
+Windows 8 and Windows 10, both 32 bit and 64 bit versions. They are
+compatible with Data Execution Prevention and with execution hooks
+that inspect the import or export table of launched executables
+(graphics drivers are known to do this).
 
 It is not a primary goal of Crinkler to anticipate incompatibilities
 that may arise in the future as a consequence of new Windows versions,
@@ -423,6 +436,21 @@ Linker/Command Line/Additional Options:
     compressed form and don't care about the size. The default
     compression mode is FAST.
 
+/SATURATE
+
+    The compressor and decompressor use pairs of 8-bit counters to
+    track the distributions of 0 and 1 bits for each context. If your
+    data is very repetitive (contains large blocks of the same pattern
+    of values repeated over and over again), these counters may wrap
+    around, which can sometimes hurt compression of these repetitive
+    areas.
+
+    This option inserts extra code in the decompression header to keep
+    these counters from wrapping. It is worth trying out if you have
+    large, repetitive regions and see in the compression report that
+    the data in these regions suddenly jumps up from lightest green to
+    slightly darker green for no apparent reason.
+
 /HASHSIZE:[memory size]
 
     Specify the amount of memory the decompressor is allowed to use
@@ -444,6 +472,36 @@ Linker/Command Line/Additional Options:
     default value is 20. Higher values rarely improve the size by more
     than a few bytes.
 
+/TINYHEADER
+    Enables an alternative compression algorithm trading off some
+    compression efficiency for an even smaller decompression overhead.
+    This can be beneficial when targeting extremely small file sizes
+    such as 1kb. The simpler decompressor gathers statistics by
+    repeated linear searches instead of hashing. This results in
+    an O(n^2) decompression time which can become prohibitively slow
+    for files significantly larger than 1kb.
+
+    The HASHSIZE, HASHTRIES, COMPMODE, SATURATE and EXPORT options are
+    ignored when TINYHEADER is enabled.
+
+/TINYIMPORT
+    Enables a more compact function importing scheme that does not
+    require the explicit storage of function name hashes. This is
+    achieved by indiscriminately importing every function from the
+    relevant DLLs. Imported functions are distributed in an import
+    table based on their function name hashes. Intuitively, this
+    embeds the hash code entropy directly into the call instruction.
+
+    Crinkler ensures that the import table size and hash function are
+    chosen such that there are no collisions for the functions in use.
+
+    This technique is potentially less resilient to changes in
+    future windows versions, so it is recommended to also distribute
+    safe versions when using this option.
+
+    The UNSAFEIMPORT, FALLBACKDLL and RANGE options are ignored
+    when TINYIMPORT is enabled.
+
 /ORDERTRIES:[number of retries]
 
     Specify the number of section reordering iterations that the
@@ -464,7 +522,7 @@ Linker/Command Line/Additional Options:
     d3dx9_??. This option can be specified multiple times, for
     different DLLs.
 
-/REPLACEDLL:[oldDLL=newDLL]
+/REPLACEDLL:[oldDLL]=[newDLL]
 
     Whenever a function is imported from oldDLL, import it from newDLL
     instead. DLL replacement is useful when the end user might not
@@ -473,6 +531,75 @@ Linker/Command Line/Additional Options:
     option if you know that the two DLLs are compatible. When
     REPLACEDLL and RANGE are used together, RANGE must refer to the
     new DLL.
+
+/FALLBACKDLL:[firstDLL]=[otherDLL]
+
+    If firstDLL fails to load, try loading otherDLL and import the
+    functions from there instead. For instance, to use d3dcompiler_47
+    when available but fall back to d3dcompiler_43 otherwise (since
+    the shader compiler in d3dcompiler_47 is much faster), link
+    to d3dcompiler_47 and use:
+
+    /FALLBACKDLL:d3dcompiler_47=d3dcompiler_43
+
+    The FALLBACKDLL option can be used together with REPLACEDLL to
+    specify a primary DLL other than the one your SDK links to. For
+    instance, if you are using the legacy DirectX SDK (which links to
+    d3dcompiler_43) and want to have the above prioritization, use:
+
+    /REPLACEDLL:d3dcompiler_43=d3dcompiler_47
+    /FALLBACKDLL:d3dcompiler_47=d3dcompiler_43
+
+    Arbitrarily long chains of DLL fallback can be used by specifying
+    the FALLBACKDLL option multiple times, though the chains can of
+    course not be cyclic.
+
+/EXPORT:[name]
+/EXPORT:[name]=[symbol]
+/EXPORT:[name]=[value]
+
+    Include an export table into the executable, containing an export
+    with the given name.
+
+    The first version exports an existing symbol under its existing
+    name. The second version exports an existing symbol under a
+    different name. The third version creates a 32-bit integer with
+    the given value and exports it under the given name. The value
+    can be specified in octal (prefixed with 0), decimal or hexadecimal
+    (prefixed with 0x) format.
+
+    The first version is compatible with the VS linker, but there is
+    currently no specific field for it in the configuration window.
+
+    The export table will be compressed along with the other data
+    in the executable and decompressed to the memory address specified
+    in the export table pointer in the PE header. Thus, the exports
+    defined this way are only visible to code inspecting the export
+    table after decompression has taken place.
+
+    For PE header technical reasons, all exports must be placed earlier
+    in memory than the export table. Thus, only symbols in the code and
+    data sections can be exported. If an uninitialized (BSS) symbol is
+    exported, it will be automatically moved to the data section (with
+    a warning). Beware that this will move the whole section containing
+    the symbol, so other symbols might be moved along with it.
+
+    The EXPORT option can be used to signal to the graphics driver that
+    your program desires to run on the high-performance GPU in a multi-
+    GPU system. This saves the user from having to right-click on the
+    executable and select "Run with graphics processor...".
+
+    To request high performance on NVIDIA Optimus systems, use:
+
+    /EXPORT:NvOptimusEnablement=1
+
+    To request high performance on AMD PowerXpress/Enduro systems, use:
+
+    /EXPORT:AmdPowerXpressRequestHighPerformance=1
+
+    An arbitrary number of exports can be specified, so the two high
+    performance declarations can be used together if you have space
+    enough to spare.
 
 /UNSAFEIMPORT
 
@@ -596,6 +723,18 @@ Linker/Command Line/Additional Options:
     always be 1-byte aligned. The space between the sections will be
     padded with zero bytes.
 
+/UNALIGNCODE
+
+    Force all code sections to use alignment of 1, eliminating all
+    padding between them. This usually improves compression, but
+    can result in slightly lower performance if some functions are
+    called in performance critical loops.
+
+    The /OVERRIDEALIGNMENTS mechanism has priority over /UNALIGNCODE,
+    so if you want to excempt a few functions from being unaligned,
+    you can specify an explicit alignment for these as described for
+    /OVERRIDEALIGNMENTS.
+
 
 Finally, Crinkler has a number of options for controlling the output
 during compression. Just like the other options, these can be
@@ -668,11 +807,12 @@ be an EXE file produced by Crinkler 0.4 or newer. Most options then
 take on slightly different meanings, as described here.
 
 The /CRINKLER, /PRIORITY, @commandfile and /PROGRESSGUI options work
-as normally. The /ENTRY, /LIBPATH, /ORDERTRIES, /RANGE, /REPLACEDLL,
-/UNSAFEIMPORT, /TRANSFORM:CALLS, /NOINITIALIZERS, /TRUNCATEFLOATS and
-/OVERRIDEALIGNMENTS options are ignored, as the parameters specified
-by these options cannot be changed via recompression. The /PRINT options
-are also ignored. The remaining options work as follows:
+as normally. The /ENTRY, /LIBPATH, /ORDERTRIES, /RANGE, /FALLBACKDLL,
+/UNSAFEIMPORT, /TRANSFORM:CALLS, /NOINITIALIZERS, /TRUNCATEFLOATS,
+/OVERRIDEALIGNMENTS, /UNALIGNCODE, /TINYHEADER and /TINYIMPORT options
+are ignored, as the parameters specified by these options cannot be
+changed via recompression. The /PRINT options are also ignored. The
+remaining options work as follows:
 
 /SUBSYSTEM:CONSOLE
 /SUBSYSTEM:WINDOWS
@@ -705,6 +845,12 @@ are also ignored. The remaining options work as follows:
     newer, this will typically yield a compression ratio similar to
     the original compression.
 
+/SATURATE
+/SATURATE:NO
+
+    If this option is given, it specifies saturation as normally. If
+    it is omitted, the original saturation mode will be used.
+
 /HASHSIZE:[memory size]
 
     If neither this option nor a compression mode is specified, the
@@ -722,6 +868,31 @@ are also ignored. The remaining options work as follows:
 
     If hash size optimization takes place, this option specifies the
     number of tries as normally. Otherwise it is ignored.
+
+/REPLACEDLL:[oldDLL]=[newDLL]
+
+    Replaces an original DLL by a new one. Only works if the names
+    of the DLLs are exactly the same length.
+
+/STRIPEXPORTS
+
+    This is a recompression specific option which instructs Crinkler
+    to strip away any existing exports from the executable. New exports
+    can be added using the /EXPORT option whether or not the existing
+    exports are stripped away.
+
+/EXPORT:[name]
+/EXPORT:[name]=[symbol]
+/EXPORT:[name]=[value]
+
+    Adds an export to the executable, as normally. The first two
+    versions can only refer to an existing export in the executable
+    that was exported using one of the first two versions in the first
+    place. They can refer to such an export even if existing exports
+    are stripped away using the /STRIPEXPORTS option.
+
+    If an export already exists with the same name, the new export
+    replaces the existing one.
 
 /REPORT:[HTML file name]
 
@@ -858,11 +1029,14 @@ gives some advice on these.
   you perform on smaller files might turn out to behave differently
   when you get nearer to 4k.
 
-- As a matter of good conduct, do not use UNSAFEIMPORT if you can
-  spare the space, and do not set HASHSIZE higher than you need. In
-  other words, if your final intro is well below the size limit,
-  remove the UNSAFEIMPORT option (if you added it in the first place)
-  and then lower HASHSIZE in order not to waste memory unnecessarily.
+- As a matter of good conduct, do not use TINYIMPORT or UNSAFEIMPORT
+  if you can spare the space, and do not set HASHSIZE higher than
+  you need. In other words, if your final intro is well below the size
+  limit, remove the UNSAFEIMPORT option (if you added it in the
+  first place) and then lower HASHSIZE in order not to waste memory
+  unnecessarily. Also consider adding the high-performance GPU request
+  exports as described under the EXPORT option if your intro could
+  benefit from it.
 
 
 
@@ -878,12 +1052,6 @@ C:\WINDOWS\system32. Alternatively, you can use the REPLACEDLL option
 to replace it by one that is available. If you get this message for
 msvcr?? DLLs, you have a dependency on the runtime DLL you need to get
 rid of. See the section on standard libraries.
-
-If you launch your Crinkler-compressed program from within Visual
-Studio, use Start Without Debugging (Ctrl+F5) rather than Start
-Debugging (F5). The debugger cannot handle Crinkler-compressed
-executables. If the program crashes, you can still attach the debugger
-in the normal way.
 
 When running inside Visual Studio, the textual progress bars are not
 updated correctly, since the Visual Studio console does not flush the
@@ -941,8 +1109,8 @@ Snq, Darkblade, Abductee, iq, Las, pirx, Hitchhikr, Gloom, Zephod,
 coda, KK, XMunkki, KammutierSpule, acidbrain, xTrim, jix, SubV242,
 w23, ryg, shinmai, Decipher, xtrium, TomasRiker, smoothstep, XT95,
 NeKoFu, n3Xus, Moerder, merry, RCL, zoom, vampire7, Key-Real,
-quiller, and all the ones we have forgotten. Also thanks to Dwarf,
-Polygon7 and Gargaj for suggestions for our web design.
+quiller, Seven, and all the ones we have forgotten. Also thanks to
+Dwarf, Polygon7 and Gargaj for suggestions for our web design.
 
 Big thanks to Rrrola for his valuable suggestions for optimizing the
 decompression code, and to qkumba for his guidance on the zero-section
