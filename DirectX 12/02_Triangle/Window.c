@@ -101,17 +101,13 @@ ID3D12GraphicsCommandList* mCommandList;
 ID3D12RootSignature* mRootSignature;
 
 // Synchronization objects.
-//HANDLE mfenceEvent;
-//ID3D12Fence* mFence;
-//static UINT mCurrentFence;
+HANDLE mfenceEvent;
+ID3D12Fence* mFence;
+static UINT64 mCurrentFence;
 
 static UINT mrtvDescriptorIncrSize;
 static UINT mframeIndex;
 
-HANDLE mframeFenceEvents[FRAMECOUNT];
-ID3D12Fence* mFences[FRAMECOUNT];
-UINT mCurrentFenceValue;
-UINT mFenceValues[FRAMECOUNT];
 
 
 // App resources.
@@ -143,7 +139,7 @@ void *memcpy(void *v_dst, const void *v_src, unsigned int c)
 	return v_dst;
 }
 
-/*
+
 void WaitForPreviousFrame()
 {
 	// WAITING FOR THE FRAME TO COMPLETE BEFORE CONTINUING IS NOT BEST PRACTICE.
@@ -163,18 +159,6 @@ void WaitForPreviousFrame()
 	}
 
 	mframeIndex = mSwapChain3->lpVtbl->GetCurrentBackBufferIndex(mSwapChain3);
-}
-*/
-
-
-void WaitForFence(ID3D12Fence* fence, UINT completionValue, HANDLE waitEvent)
-{
-	// Wait until the previous frame is finished.
-	if (fence->lpVtbl->GetCompletedValue(fence) < completionValue)
-	{
-		ThrowIfFailed(fence->lpVtbl->SetEventOnCompletion(fence, completionValue, waitEvent));
-		WaitForSingleObject(waitEvent, INFINITE);
-	}
 }
 
 // allows to remove some system calls to reduce size -> application doesn't comply with windows standard behaviour anymore, so be careful
@@ -358,17 +342,11 @@ __declspec(naked)  void __cdecl winmain()
 		// bug in C calling support in DirectX 12
 		((void(__stdcall*)(ID3D12DescriptorHeap*, D3D12_CPU_DESCRIPTOR_HANDLE*)) mDescriptorHeap->lpVtbl->GetCPUDescriptorHandleForHeapStart)(mDescriptorHeap, &rtvHandle);
 
-		UINT mCurrentFenceValue = 1;
 
-	
+
 		// Create a RTV for each frame.
 		for (UINT n = 0; n < FRAMECOUNT; n++)
 		{
-			// create fences for each frame so we can protect resources and wait for any given frame
-			mframeFenceEvents[n] = CreateEvent(NULL, FALSE, FALSE, NULL);
-			mFenceValues[n] = 0;
-			mDevice->lpVtbl->CreateFence(mDevice, 0, D3D12_FENCE_FLAG_NONE, (REFIID)&IID_ID3D12Fence, (LPVOID*)(&mFences[n])); //  IID_PPV_ARGS(&mFences[n]));
-
 			ThrowIfFailed(mSwapChain->lpVtbl->GetBuffer(mSwapChain, n, (REFIID)&IID_ID3D12Resource, (LPVOID*)(&mRenderTarget[n]))); //IID_PPV_ARGS(&m_renderTargets[n])));
 			mDevice->lpVtbl->CreateRenderTargetView(mDevice, mRenderTarget[n], NULL, rtvHandle);
 			rtvHandle.ptr += mrtvDescriptorIncrSize;
@@ -452,12 +430,12 @@ __declspec(naked)  void __cdecl winmain()
 
 
 		// Create and initialize the fence.
-//		ThrowIfFailed(mDevice->lpVtbl->CreateFence(mDevice, 0, D3D12_FENCE_FLAG_NONE, (REFIID)&IID_ID3D12Fence, (LPVOID*)(&mFence)));
-//		mCurrentFence = 1;
+		ThrowIfFailed(mDevice->lpVtbl->CreateFence(mDevice, 0, D3D12_FENCE_FLAG_NONE, (REFIID)&IID_ID3D12Fence, (LPVOID*)(&mFence)));
+		mCurrentFence = 1;
 
 
 		// Create an event handle to use for frame synchronization.
-//		mfenceEvent = CreateEventEx(NULL, FALSE, FALSE, EVENT_ALL_ACCESS);
+		mfenceEvent = CreateEventEx(NULL, FALSE, FALSE, EVENT_ALL_ACCESS);
 
 		// setup timer 
 		StartTime = GetTickCount();
@@ -479,9 +457,7 @@ __declspec(naked)  void __cdecl winmain()
 
 			// go out of game loop and shutdown
 			if (CurrentTime > 3300 || GetAsyncKeyState(VK_ESCAPE))
-//				BRunning = FALSE;
-
-			WaitForFence(mFences[mframeIndex], mFenceValues[mframeIndex], mframeFenceEvents[mframeIndex]);
+				BRunning = FALSE;
 
 
 			// Command list allocators can only be reset when the associated 
@@ -547,33 +523,18 @@ __declspec(naked)  void __cdecl winmain()
 
 			// Present and move to the next back buffer.
 			ThrowIfFailed(mSwapChain->lpVtbl->Present(mSwapChain, 1, 0));
+			//	mframeIndex = (1 + mframeIndex) % FRAMECOUNT;
 
-
-			// Mark the fence for the current frame.
-			UINT fenceValue = mCurrentFenceValue;
-			mCommandQueue->lpVtbl->Signal(mCommandQueue, mFences[mframeIndex], fenceValue);
-			mFenceValues[mframeIndex] = fenceValue;
-			++mCurrentFenceValue;
-
-			mframeIndex = (1 + mframeIndex) % FRAMECOUNT;
-
-//			WaitForPreviousFrame();
+			WaitForPreviousFrame();
 		}
 
 
 #if defined(WELLBEHAVIOUR)
 		// Wait for the GPU to be done with all resources.
-//		WaitForPreviousFrame();
-
-
-		// Drain the queue, wait for everything to finish
-		for (int i = 0; i < FRAMECOUNT; ++i) {
-			WaitForFence(mFences[i], mFenceValues[i], mframeFenceEvents[i]);
-		}
-
+		WaitForPreviousFrame();
 
 		// close the fence event
-//		CloseHandle(mfenceEvent);
+		CloseHandle(mfenceEvent);
 
 		mDevice->lpVtbl->Release(mDevice);
 		mSwapChain->lpVtbl->Release(mSwapChain);
@@ -587,13 +548,7 @@ __declspec(naked)  void __cdecl winmain()
 		mDescriptorHeap->lpVtbl->Release(mDescriptorHeap);
 		mCommandList->lpVtbl->Release(mCommandList);
 		mPSO->lpVtbl->Release(mPSO);
-//		mFence->lpVtbl->Release(mFence);
-
-		for (UINT n = 0; n < FRAMECOUNT; n++)
-		{
-			mFences[n]->lpVtbl->Release(mFences[n]);
-		}
-
+		mFence->lpVtbl->Release(mFence);
 #endif
 
 #if defined(REGULARENTRYPOINT)
