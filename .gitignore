@@ -13,3 +13,8 @@ DirectX 12/02_Triangle/pixel.sh
 DirectX 12/02_Triangle/vertex.pso
 *.pso
 DirectX 12/02_Triangle/vertex.sh
+DirectX 12/01_Skeleton/Window.c.bak
+*.suo
+DirectX 12/02_Triangle/Win32/Debug/GraphicsDemo.log
+*.pdb
+DirectX 12/02_Triangle/Win32/Debug/Window.obj
