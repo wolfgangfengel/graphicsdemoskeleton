@@ -89,7 +89,6 @@ DEFINE_GUIDW(IID_IDXGIAdapter3, 0x645967A4, 0x1392, 0x4310, 0xA7, 0x98, 0x80, 0x
 
 
 // Pipeline objects.
-IDXGISwapChain* mSwapChain;
 IDXGISwapChain3* mSwapChain3;
 ID3D12Device* mDevice;
 ID3D12Resource* mRenderTarget[FRAMECOUNT];
@@ -252,12 +251,18 @@ __declspec(naked)  void __cdecl winmain()
 		descSwapChain.SampleDesc.Count = 1;
 		descSwapChain.Windowed = TRUE;
 
+		IDXGISwapChain* SwapChain;
 		pFactory->lpVtbl->CreateSwapChain(pFactory,
 											mCommandQueue,		// Swap chain needs the queue so that it can force a flush on it.
 											&descSwapChain,
-											&mSwapChain);
+											&SwapChain);
 
-		mSwapChain->lpVtbl->QueryInterface(mSwapChain, (REFIID)&IID_IDXGISwapChain3, (LPVOID*)(&mSwapChain3));
+		// we need a swap chain 3 interface ...
+		SwapChain->lpVtbl->QueryInterface(SwapChain, (REFIID)&IID_IDXGISwapChain3, (LPVOID*)(&mSwapChain3));
+
+#if defined(WELLBEHAVIOUR)
+		SwapChain->lpVtbl->Release(SwapChain);
+#endif
 
 
 		// Define the vertex input layout.
@@ -338,16 +343,15 @@ __declspec(naked)  void __cdecl winmain()
 
 		// Create frame resources
 		D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle;
-		//	rtvHandle = mDescriptorHeap->lpVtbl->GetCPUDescriptorHandleForHeapStart(mDescriptorHeap);
+		//rtvHandle = mDescriptorHeap->lpVtbl->GetCPUDescriptorHandleForHeapStart(mDescriptorHeap);
 		// bug in C calling support in DirectX 12
 		((void(__stdcall*)(ID3D12DescriptorHeap*, D3D12_CPU_DESCRIPTOR_HANDLE*)) mDescriptorHeap->lpVtbl->GetCPUDescriptorHandleForHeapStart)(mDescriptorHeap, &rtvHandle);
-
 
 
 		// Create a RTV for each frame.
 		for (UINT n = 0; n < FRAMECOUNT; n++)
 		{
-			ThrowIfFailed(mSwapChain->lpVtbl->GetBuffer(mSwapChain, n, (REFIID)&IID_ID3D12Resource, (LPVOID*)(&mRenderTarget[n]))); //IID_PPV_ARGS(&m_renderTargets[n])));
+			ThrowIfFailed(mSwapChain3->lpVtbl->GetBuffer(mSwapChain3, n, (REFIID)&IID_ID3D12Resource, (LPVOID*)(&mRenderTarget[n]))); //IID_PPV_ARGS(&m_renderTargets[n])));
 			mDevice->lpVtbl->CreateRenderTargetView(mDevice, mRenderTarget[n], NULL, rtvHandle);
 			rtvHandle.ptr += mrtvDescriptorIncrSize;
 		}
@@ -522,7 +526,7 @@ __declspec(naked)  void __cdecl winmain()
 			mCommandQueue->lpVtbl->ExecuteCommandLists(mCommandQueue, _countof(ppCommandLists), ppCommandLists);
 
 			// Present and move to the next back buffer.
-			ThrowIfFailed(mSwapChain->lpVtbl->Present(mSwapChain, 1, 0));
+			ThrowIfFailed(mSwapChain3->lpVtbl->Present(mSwapChain3, 1, 0));
 			//	mframeIndex = (1 + mframeIndex) % FRAMECOUNT;
 
 			WaitForPreviousFrame();
@@ -537,18 +541,21 @@ __declspec(naked)  void __cdecl winmain()
 		CloseHandle(mfenceEvent);
 
 		mDevice->lpVtbl->Release(mDevice);
-		mSwapChain->lpVtbl->Release(mSwapChain);
+		mSwapChain3->lpVtbl->Release(mSwapChain3);
+
 		// release all the render targets
 		for (UINT n = 0; n < FRAMECOUNT; n++)
 		{
 			mRenderTarget[n]->lpVtbl->Release(mRenderTarget[n]);
 		}
+
 		mCommandAllocator->lpVtbl->Release(mCommandAllocator);
 		mCommandQueue->lpVtbl->Release(mCommandQueue);
 		mDescriptorHeap->lpVtbl->Release(mDescriptorHeap);
 		mCommandList->lpVtbl->Release(mCommandList);
 		mPSO->lpVtbl->Release(mPSO);
 		mFence->lpVtbl->Release(mFence);
+		mRootSignature->lpVtbl->Release(mRootSignature);
 #endif
 
 #if defined(REGULARENTRYPOINT)

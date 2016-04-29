@@ -1,0 +1,285 @@
+Crinkler 2.0 (Jul 28 2015) (c) 2005-2015 Aske Simon Christensen & Rune Stubbe
+
+Target: Intro.exe
+Tiny compressor: NO
+Tiny import: NO
+Subsystem type: WINDOWS
+Large address aware: NO
+Compression mode: SLOW
+Saturate counters: NO
+Hash size: 500 MB
+Hash tries: 500
+Order tries: 5000
+Report: report.html
+Transforms: NONE
+Replace DLLs: NONE
+Fallback DLLs: NONE
+Range DLLs: d3d12.dll
+Exports: NONE
+
+Loading dxgi.lib...
+Loading kernel32.lib...
+Loading user32.lib...
+Loading d3d12.lib...
+Loading Win32\Release\Window.obj...
+
+Linking...
+
+
+: warning LNK: Entry point not at start of section, jump necessary
+
+-Imports----------------------------------
+kernel32
+  CloseHandle (ordinal 126, hash F42448D2)
+  CreateEventExW (ordinal 181, hash A83BAF08)
+  ExitProcess (ordinal 339, hash 38A66AE8)
+  GetTickCount (ordinal 761, hash FBBA3133)
+  LoadLibraryA (ordinal 941, hash E9826FC6)
+  WaitForSingleObject (ordinal 1469, hash 0D89657F)
+user32
+  CreateWindowExW (ordinal 1621, hash F8820B4C)
+  GetAsyncKeyState (ordinal 1788, hash DE59F860)
+  MessageBoxA (ordinal 2108, hash 4F09131B)
+  PeekMessageW (ordinal 2146, hash EA16877E)
+  ShowCursor (ordinal 2344, hash 19A434A8)
+d3d12
+  D3D12CreateDevice (ordinal 101, hash 6C8B6AE5)
+  D3D12SerializeRootSignature (ordinal 107, hash 9DAC8A51)
+dxgi
+  CreateDXGIFactory1 (ordinal 10, hash 8F9537ED)
+
+: warning LNK: No functions were imported from range DLL 'd3d12.dll'
+
+Truncating floats:
+__real@3e4ccccd[0]: 0.200000 (0x3E4CCCCD 32 bits) -> 0.200195 (0x3E4D0000 16 bits)
+__real@3ecccccd[0]: 0.400000 (0x3ECCCCCD 32 bits) -> 0.400391 (0x3ECD0000 16 bits)
+__real@3ee66666[0]: 0.450000 (0x3EE66666 32 bits) -> 0.449219 (0x3EE60000 16 bits)
+__real@3f000000[0]: 0.500000 (0x3F000000 32 bits) -> 0.500000 (0x3F000000 16 bits)
+__real@44160000[0]: 600.000000 (0x44160000 32 bits) -> 600.000000 (0x44160000 16 bits)
+__real@44480000[0]: 800.000000 (0x44480000 32 bits) -> 800.000000 (0x44480000 16 bits)
+__real@bee66666[0]: -0.450000 (0xBEE66666 32 bits) -> -0.449219 (0xBEE60000 16 bits)
+__real@bf000000[0]: -0.500000 (0xBF000000 32 bits) -> -0.500000 (0xBF000000 16 bits)
+
+Uncompressed size of code:  2176
+Uncompressed size of data:  1789
+
+|-- Estimating models for code ----------------------------|
+............................................................   0m01s
+Ideal compressed size: 1133.29
+
+|-- Estimating models for data ----------------------------|
+............................................................   0m00s
+Ideal compressed size: 559.94
+
+Estimated ideal compressed total size: 1693.23
+
+
+Reordering sections...
+  Iteration:     0  Code: 1133.29  Data: 559.94  Size: 1693.23
+  Iteration:     2  Code: 1133.28  Data: 559.94  Size: 1693.22
+  Iteration:     9  Code: 1132.61  Data: 559.90  Size: 1692.51
+  Iteration:    10  Code: 1132.57  Data: 559.90  Size: 1692.47
+  Iteration:    13  Code: 1132.54  Data: 559.90  Size: 1692.44
+  Iteration:    24  Code: 1131.60  Data: 559.90  Size: 1691.50
+  Iteration:    26  Code: 1132.02  Data: 559.17  Size: 1691.19
+  Iteration:    28  Code: 1131.43  Data: 559.29  Size: 1690.71
+  Iteration:    32  Code: 1130.99  Data: 559.29  Size: 1690.27
+  Iteration:    59  Code: 1130.90  Data: 558.96  Size: 1689.86
+  Iteration:    77  Code: 1130.63  Data: 558.96  Size: 1689.59
+  Iteration:    84  Code: 1130.34  Data: 558.96  Size: 1689.30
+  Iteration:    99  Code: 1130.45  Data: 558.65  Size: 1689.10
+  Iteration:   103  Code: 1128.86  Data: 558.65  Size: 1687.51
+  Iteration:   110  Code: 1128.85  Data: 558.65  Size: 1687.50
+  Iteration:   115  Code: 1127.99  Data: 559.02  Size: 1687.01
+  Iteration:   137  Code: 1127.78  Data: 559.05  Size: 1686.83
+  Iteration:   192  Code: 1127.77  Data: 559.05  Size: 1686.82
+  Iteration:   277  Code: 1127.25  Data: 559.05  Size: 1686.29
+  Iteration:   280  Code: 1127.19  Data: 559.02  Size: 1686.21
+  Iteration:   283  Code: 1127.18  Data: 559.02  Size: 1686.20
+  Iteration:   327  Code: 1127.07  Data: 558.86  Size: 1685.93
+  Iteration:   451  Code: 1127.10  Data: 558.73  Size: 1685.82
+  Iteration:   453  Code: 1126.92  Data: 558.73  Size: 1685.65
+  Iteration:   583  Code: 1126.72  Data: 558.73  Size: 1685.44
+  Iteration:   655  Code: 1127.13  Data: 555.48  Size: 1682.61
+  Iteration:   736  Code: 1127.13  Data: 555.48  Size: 1682.61
+  Iteration:  1064  Code: 1126.62  Data: 555.40  Size: 1682.02
+  Iteration:  1153  Code: 1127.07  Data: 554.46  Size: 1681.53
+  Iteration:  1291  Code: 1126.74  Data: 554.46  Size: 1681.20
+  Iteration:  1439  Code: 1126.65  Data: 554.41  Size: 1681.05
+  Iteration:  1477  Code: 1126.59  Data: 554.41  Size: 1681.00
+  Iteration:  1489  Code: 1126.49  Data: 554.41  Size: 1680.90
+  Iteration:  2534  Code: 1126.35  Data: 554.30  Size: 1680.66
+  Iteration:  2931  Code: 1126.31  Data: 554.12  Size: 1680.43
+Time spent: 0m10s
+
+|-- Reestimating models for code --------------------------|
+............................................................   0m01s
+Ideal compressed size: 1125.10
+
+|-- Reestimating models for data --------------------------|
+............................................................   0m00s
+Ideal compressed size: 553.05
+
+Reestimated ideal compressed total size: 1678.15
+
+|-- Optimizing hash table size ----------------------------|
+............................................................   0m05s
+Real compressed total size: 1678
+Bytes lost to hashing: -0.15
+
+label name                                   pos comp-pos      size compsize
+Code sections                                  0     0.00      2177  1110.66
+  .text                                        0     0.13       166   132.44
+    _Import                                    0     0.13       148   124.40
+      _Import                                  0     0.13        29    22.87
+      DLLLoop                                 29    22.99        18    16.03
+      DLLLoop.dontEnd                         47    39.02         4     4.68
+      HashLoop                                51    43.70         1     1.23
+      GetProcAddress                          52    44.94        13    11.51
+      ScanProcedureNamesLoop                  65    56.44        13     9.65
+      CalculateHashLoop                       78    66.10        45    37.41
+      LoadDLL                                123   103.51        10     7.88
+      NextDLL                                133   111.39        15    13.13
+    _CreateDXGIFactory1@8                    148   124.52         6     4.05
+      _CreateDXGIFactory1@8                  148   124.52         6     4.05
+    _D3D12SerializeRootSignature@16          154   128.57         6     2.14
+      _D3D12SerializeRootSignature@16        154   128.57         6     2.14
+    _D3D12CreateDevice@16                    160   130.72         6     1.85
+      _D3D12CreateDevice@16                  160   130.72         6     1.85
+  .text$mn                                   166   132.56      2011   978.10
+    _memcpy                                  166   132.56        37    34.74
+      _memcpy                                166   132.56        37    34.74
+    _WaitForPreviousFrame                    203   167.30       123    79.55
+      _WaitForPreviousFrame                  203   167.30       123    79.55
+    _winmain                                 326   246.85      1851   863.82
+      _winmain                               326   246.85      1850   862.29
+      $LN63                                 2176  1109.14         0     0.00
+      $LN62                                 2176  1109.14         1     1.53
+
+Data sections                               2177  1110.66      1580   546.32
+  .data                                     2177  1110.66        23    19.15
+    _DLLNames                               2177  1110.66        23    19.15
+      _DLLNames                             2177  1110.66        23    19.15
+  .rdata                                    2200  1129.82         4     3.52
+    __real@bee66666                         2200  1129.82         4     3.52
+      __real@bee66666                       2200  1129.82         4     3.52
+  .rdata                                    2204  1133.33         4     2.09
+    __real@bf000000                         2204  1133.33         4     2.09
+      __real@bf000000                       2204  1133.33         4     2.09
+  .rdata                                    2208  1135.42         4     1.95
+    __real@3f000000                         2208  1135.42         4     1.95
+      __real@3f000000                       2208  1135.42         4     1.95
+  .rdata                                    2212  1137.37         4     2.66
+    __real@3e4ccccd                         2212  1137.37         4     2.66
+      __real@3e4ccccd                       2212  1137.37         4     2.66
+  .rdata                                    2216  1140.03         4     2.03
+    __real@3ee66666                         2216  1140.03         4     2.03
+      __real@3ee66666                       2216  1140.03         4     2.03
+  .rdata                                    2220  1142.06         4     1.80
+    __real@3ecccccd                         2220  1142.06         4     1.80
+      __real@3ecccccd                       2220  1142.06         4     1.80
+  .rdata                                    2224  1143.86         4     2.38
+    __real@44480000                         2224  1143.86         4     2.38
+      __real@44480000                       2224  1143.86         4     2.38
+  .rdata                                    2228  1146.25         4     2.49
+    __real@44160000                         2228  1146.25         4     2.49
+      __real@44160000                       2228  1146.25         4     2.49
+  .rdata                                    2232  1148.74         8     5.92
+    ??_C@_05DPNLPLKI@COLOR?$AA@             2232  1148.74         8     5.92
+      ??_C@_05DPNLPLKI@COLOR?$AA@           2232  1148.74         8     5.92
+  .rdata                                    2240  1154.66        12     5.98
+    ??_C@_19LELMJPKF@?$AAe?$AAd?$AAi?$      2240  1154.66        12     5.98
+      ??_C@_19LELMJPKF@?$AAe?$AAd?$AAi      2240  1154.66        12     5.98
+  .rdata                                    2252  1160.64        12     8.06
+    ??_C@_08JPMAAECC@POSITION?$AA@          2252  1160.64        12     8.06
+      ??_C@_08JPMAAECC@POSITION?$AA@        2252  1160.64        12     8.06
+  .rdata                                    2264  1168.70        16    17.27
+    _IID_IDXGIFactory4                      2264  1168.70        16    17.27
+      _IID_IDXGIFactory4                    2264  1168.70        16    17.27
+  .rdata                                    2280  1185.97        16    16.14
+    _IID_ID3D12Resource                     2280  1185.97        16    16.14
+      _IID_ID3D12Resource                   2280  1185.97        16    16.14
+  .rdata                                    2296  1202.11        16    16.67
+    _IID_ID3D12CommandAllocator             2296  1202.11        16    16.67
+      _IID_ID3D12CommandAllocator           2296  1202.11        16    16.67
+  .rdata                                    2312  1218.78        16    16.09
+    _IID_ID3D12Fence                        2312  1218.78        16    16.09
+      _IID_ID3D12Fence                      2312  1218.78        16    16.09
+  .rdata                                    2328  1234.87        16    16.17
+    _IID_ID3D12CommandList                  2328  1234.87        16    16.17
+      _IID_ID3D12CommandList                2328  1234.87        16    16.17
+  .rdata                                    2344  1251.04        16    16.34
+    _IID_IDXGISwapChain3                    2344  1251.04        16    16.34
+      _IID_IDXGISwapChain3                  2344  1251.04        16    16.34
+  .rdata                                    2360  1267.38        16    16.62
+    _IID_ID3D12CommandQueue                 2360  1267.38        16    16.62
+      _IID_ID3D12CommandQueue               2360  1267.38        16    16.62
+  .rdata                                    2376  1284.00        16    15.83
+    _IID_ID3D12Device                       2376  1284.00        16    15.83
+      _IID_ID3D12Device                     2376  1284.00        16    15.83
+  .rdata                                    2392  1299.83        16    15.93
+    _IID_ID3D12PipelineState                2392  1299.83        16    15.93
+      _IID_ID3D12PipelineState              2392  1299.83        16    15.93
+  .rdata                                    2408  1315.75        16    16.48
+    _IID_ID3D12RootSignature                2408  1315.75        16    16.48
+      _IID_ID3D12RootSignature              2408  1315.75        16    16.48
+  .rdata                                    2424  1332.23        16    16.44
+    _IID_ID3D12DescriptorHeap               2424  1332.23        16    16.44
+      _IID_ID3D12DescriptorHeap             2424  1332.23        16    16.44
+  .rdata                                    2440  1348.67      1144   287.86
+    _g_VShader                              2440  1348.67       608   207.04
+      _g_VShader                            2440  1348.67       608   207.04
+    _g_PShader                              3048  1555.71       536    80.82
+      _g_PShader                            3048  1555.71       536    80.82
+  .data                                     3584  1636.53       173    20.46
+    ?heapProperties@?2??winmain@@9@9        3584  1636.53       173    20.46
+      ?heapProperties@?2??winmain@@9@9      3584  1636.53        24     3.08
+      ?VertexBufferDesc@?2??winmain@@9      3608  1639.61        56     6.60
+      ?rasterizer@?2??winmain@@9@9          3664  1646.21        48     3.61
+      ?blendstate@?2??winmain@@9@9          3712  1649.82        45     7.17
+
+Uninitialized sections                      3757              62591
+  .bss                                     65536                128
+    _ImportList                            65536                  0
+    __imp__CloseHandle@4                   65536                  4
+    __imp__CreateEventExW@16               65540                  4
+    __imp__ExitProcess@4                   65544                  4
+    __imp__GetTickCount@0                  65548                  4
+    __imp__LoadLibraryA@4                  65552                  4
+    __imp__WaitForSingleObject@8           65556                  4
+    __imp__CreateWindowExW@48              65560                  4
+    __imp__GetAsyncKeyState@4              65564                  4
+    __imp__MessageBoxA@16                  65568                  4
+    __imp__PeekMessageW@20                 65572                  4
+    __imp__ShowCursor@4                    65576                  4
+    __imp__D3D12CreateDevice@16            65580                  4
+    __imp__D3D12SerializeRootSignature     65584                  4
+    __imp__CreateDXGIFactory1@8            65588                  4
+    _mDescViewBufVert                      65592                 16
+    _mCommandQueue                         65608                  4
+    _mRootSignature                        65612                  4
+    _mRenderTarget                         65616                  8
+    _mPSO                                  65624                  4
+    _mDescriptorHeap                       65628                  4
+    _mDevice                               65632                  4
+    _mSwapChain                            65636                  4
+    _mCommandList                          65640                  4
+    _mBufVerts                             65644                  4
+    _mSwapChain3                           65648                  4
+    _mFence                                65652                  4
+    _mCommandAllocator                     65656                  4
+    _mfenceEvent                           65660                  4
+  .bss                                     65664                684
+    _mCurrentFence                         65664                684
+      _mCurrentFence                       65664                  8
+      _mrtvDescriptorIncrSize              65672                  4
+      _mframeIndex                         65676                  4
+      ?queueDesc@?2??winmain@@9@9          65680                 16
+      ?descSwapChain@?2??winmain@@9@9      65696                 64
+      ?descPso@?2??winmain@@9@9            65760                572
+      ?descHeap@?2??winmain@@9@9           66332                 16
+
+Output file: Intro.exe
+Final file size: 2014
+
+time spent: 0m20s
