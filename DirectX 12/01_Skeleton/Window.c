@@ -2,18 +2,16 @@
 //
 // Skeleton Intro Coding
 //
-// by Wolfgang Engel 
-// Last time modified: 10/08/2015 (started sometime in 2003 or maybe much longer ago)
+// by Wolfgang Engel
+// Last time modified: 03/05/2016 (started sometime in 2003 or maybe much longer ago)
 //
 ///////////////////////////////////////////////////////////////////////
 #define WIN32_LEAN_AND_MEAN
 #define WIN32_EXTRA_LEAN
 
-#include <Windows.h>
+#include <windows.h>
 #include <sal.h>
 #include <rpcsal.h>
-
-
 
 #define DEFINE_GUIDW(name, l, w1, w2, b1, b2, b3, b4, b5, b6, b7, b8) const GUID DECLSPEC_SELECTANY name = { l, w1, w2, { b1, b2, b3, b4, b5, b6, b7, b8 } }
 
@@ -39,7 +37,6 @@ DEFINE_GUIDW(IID_ID3D12Device, 0x189819f1, 0x1db6, 0x4b57, 0xbe, 0x54, 0x18, 0x2
 // d3d12sdklayers.h
 DEFINE_GUIDW(DXGI_DEBUG_D3D12, 0xcf59a98c, 0xa950, 0x4326, 0x91, 0xef, 0x9b, 0xba, 0xa1, 0x7b, 0xfd, 0x95);
 
-
 DEFINE_GUIDW(IID_ID3D12Debug, 0x344488b7, 0x6846, 0x474b, 0xb9, 0x89, 0xf0, 0x27, 0x44, 0x82, 0x45, 0xe0);
 DEFINE_GUIDW(IID_ID3D12DebugDevice, 0x3febd6dd, 0x4973, 0x4787, 0x81, 0x94, 0xe4, 0x5f, 0x9e, 0x28, 0x92, 0x3e);
 DEFINE_GUIDW(IID_ID3D12DebugCommandQueue, 0x09e0bf36, 0x54ac, 0x484f, 0x88, 0x47, 0x4b, 0xae, 0xea, 0xb6, 0x05, 0x3a);
@@ -48,7 +45,7 @@ DEFINE_GUIDW(IID_ID3D12InfoQueue, 0x0742a90b, 0xc387, 0x483f, 0xb9, 0x46, 0x30, 
 #endif
 
 /*
-// dxgi.h 
+// dxgi.h
 DEFINE_GUIDW(IID_IDXGIObject, 0xaec22fb8, 0x76f3, 0x4639, 0x9b, 0xe0, 0x28, 0xeb, 0x43, 0xa6, 0x7a, 0x2e);
 DEFINE_GUIDW(IID_IDXGIDeviceSubObject, 0x3d3e0379, 0xf9de, 0x4d58, 0xbb, 0x6c, 0x18, 0xd6, 0x29, 0x92, 0xf1, 0xa6);
 DEFINE_GUIDW(IID_IDXGIResource, 0x035f3ab4, 0x482e, 0x4e50, 0xb4, 0x1f, 0x8a, 0x7f, 0x8b, 0xd8, 0x96, 0x0b);
@@ -74,17 +71,15 @@ DEFINE_GUIDW(IID_IDXGIAdapter3, 0x645967A4, 0x1392, 0x4310, 0xA7, 0x98, 0x80, 0x
 #include <d3d12.h>
 #include <dxgi1_4.h>
 
-
 // define the size of the window
-#define WINWIDTH 800 
+#define WINWIDTH 800
 #define WINHEIGHT 600
-#define WINPOSX 200 
+#define WINPOSX 200
 #define WINPOSY 200
 
 #define FRAMECOUNT 2
 
 // Pipeline objects.
-IDXGISwapChain* mSwapChain;
 IDXGISwapChain3* mSwapChain3;
 ID3D12Device* mDevice;
 ID3D12Resource* mRenderTarget[FRAMECOUNT];
@@ -106,9 +101,9 @@ static UINT mframeIndex;
 EXTERN_C int _fltused = 0; // to get rid of the unresolved symbol __ftlused error
 #endif
 
-inline void ThrowIfFailed(HRESULT hr) 
-{ 
-#ifdef _DEBUG
+inline void ThrowIfFailed(HRESULT hr)
+{
+#if defined(_DEBUG)
 	if (hr != S_OK)
 		MessageBoxA(NULL, "Function call failed", "Error", MB_OK | MB_ICONERROR);
 #endif
@@ -117,7 +112,7 @@ inline void ThrowIfFailed(HRESULT hr)
 void WaitForPreviousFrame()
 {
 	// WAITING FOR THE FRAME TO COMPLETE BEFORE CONTINUING IS NOT BEST PRACTICE.
-	// This is code implemented as such for simplicity. More advanced samples 
+	// This is code implemented as such for simplicity. More advanced samples
 	// illustrate how to use fences for efficient resource usage.
 
 	// Signal and increment the fence value.
@@ -135,267 +130,266 @@ void WaitForPreviousFrame()
 	mframeIndex = mSwapChain3->lpVtbl->GetCurrentBackBufferIndex(mSwapChain3);
 }
 
-// makes the applicaton behave well with windows
-// allows to remove some system calls to reduce size
+// allows to remove some system calls to reduce size -> application doesn't comply with windows standard behaviour anymore, so be careful
 #define WELLBEHAVIOUR
 
 // for demos we can use an entry point that occupies less "space" then the regular entry point
-// if you change back to the regualar entry point you need to remove winmain in Visual Studio 2013 under Linker -> Advanced Entrypoint 
+// if you change back to the regualar entry point you need to remove winmain in Visual Studio 2015 under Linker -> Advanced Entrypoint
 //#define REGULARENTRYPOINT
 
 #if defined(REGULARENTRYPOINT)
 
-
 // this is a simplified entry point ...
 void __stdcall WinMainCRTStartup()
 {
-    ExitProcess(WinMain(GetModuleHandle(NULL), NULL, NULL, 0));
+	ExitProcess(WinMain(GetModuleHandle(NULL), NULL, NULL, 0));
 }
 
-// this is the main windows entry point ... 
+// this is the main windows entry point ...
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
 #else
 // Take away prolog and epilog, then put a minial prolog back manually with assembly below. The function never returns so no epilog is necessary.
-__declspec( naked )  void __cdecl winmain()
+__declspec(naked)  void __cdecl winmain()
 
 {
 	// Prolog
 	//__asm enter 0x10, 0;
-	__asm 
+	__asm
 	{
 		push ebp
-        mov ebp,esp
-        sub esp,__LOCAL_SIZE
+		mov ebp, esp
+		sub esp, __LOCAL_SIZE
 	}
-	
+
 	{ // Extra scope to make compiler accept the __decalspec(naked) with local variables
-
 #endif
-
 
 	// timer global variables
-	DWORD		StartTime;
-	DWORD		CurrentTime;
+		DWORD		StartTime;
+		DWORD		CurrentTime;
 
-	// keep track if the game loop is still running
-	BOOL		BRunning;
+		// keep track if the game loop is still running
+		BOOL		BRunning;
 
-	// the most simple window
-	HWND hWnd = CreateWindow(L"edit", 0, WS_POPUP | WS_VISIBLE, WINPOSX, WINPOSY, WINWIDTH, WINHEIGHT, 0, 0, 0, 0);
+		// the most simple window
+		HWND hWnd = CreateWindow(L"edit", 0, WS_POPUP | WS_VISIBLE, WINPOSX, WINPOSY, WINWIDTH, WINHEIGHT, 0, 0, 0, 0);
 
-	// don't show the cursor
-	ShowCursor(FALSE);
+		// don't show the cursor
+		ShowCursor(FALSE);
 
-
-	// Load the pipeline
+		// Load the pipeline
 #ifdef _DEBUG
 	// Enable the D3D12 debug layer.
-	{
-		ID3D12Debug* debugController = NULL;
-		D3D12GetDebugInterface((REFIID) &IID_ID3D12Debug, (LPVOID*) (&debugController));
-		debugController->lpVtbl->EnableDebugLayer(debugController);
-	}
+		{
+			ID3D12Debug* debugController = NULL;
+			D3D12GetDebugInterface((REFIID)&IID_ID3D12Debug, (LPVOID*)(&debugController));
+			debugController->lpVtbl->EnableDebugLayer(debugController);
+		}
 #endif
 
-	IDXGIFactory4* pFactory;
-	ThrowIfFailed(CreateDXGIFactory1((REFIID)&IID_IDXGIFactory4, (LPVOID*)(&pFactory)));
+		IDXGIFactory4* pFactory;
+		ThrowIfFailed(CreateDXGIFactory1((REFIID)&IID_IDXGIFactory4, (LPVOID*)(&pFactory)));
 
-	// Attempt to create a hardware based device first.  If that fails, 
-	// then fallback to WARP/software.
-	HRESULT hardware_driver = D3D12CreateDevice(NULL, D3D_FEATURE_LEVEL_11_0, (REFIID)&IID_ID3D12Device, (LPVOID*)(&mDevice));
-
+		// Attempt to create a hardware based device first.  If that fails,
+		// then fallback to WARP/software.
+		HRESULT hardware_driver = D3D12CreateDevice(NULL, D3D_FEATURE_LEVEL_11_0, (REFIID)&IID_ID3D12Device, (LPVOID*)(&mDevice));
 
 #ifdef _DEBUG
-	if (!SUCCEEDED(hardware_driver))
-	{
-		IDXGIAdapter* pWarpAdapter;
-		ThrowIfFailed(pFactory->lpVtbl->EnumWarpAdapter(pFactory, (REFIID)&IID_IDXGIAdapter3, (LPVOID*)(&pWarpAdapter)));
-
-		ThrowIfFailed(D3D12CreateDevice(
-			pWarpAdapter,
-			D3D_FEATURE_LEVEL_11_0,
-			(REFIID)&IID_ID3D12Device, (LPVOID*)(&mDevice)
-			));
-	}
-#endif
-
-	static D3D12_COMMAND_QUEUE_DESC queueDesc;
-	queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
-	queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
-	ThrowIfFailed(mDevice->lpVtbl->CreateCommandQueue(mDevice, &queueDesc, (REFIID)&IID_ID3D12CommandQueue, (LPVOID*)(&mCommandQueue)));
-
-	// Describe the swap chain.
-	static DXGI_SWAP_CHAIN_DESC descSwapChain;
-	descSwapChain.BufferCount = FRAMECOUNT;
-	descSwapChain.BufferDesc.Width = WINWIDTH;
-	descSwapChain.BufferDesc.Height = WINHEIGHT;
-	descSwapChain.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-	descSwapChain.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-	descSwapChain.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
-	descSwapChain.OutputWindow = hWnd;
-	descSwapChain.SampleDesc.Count = 1;
-	descSwapChain.Windowed = TRUE;
-	
-	pFactory->lpVtbl->CreateSwapChain(pFactory, 
-									  mCommandQueue,		// Swap chain needs the queue so that it can force a flush on it.
-									  &descSwapChain,
-									  &mSwapChain);
-	
-	mSwapChain->lpVtbl->QueryInterface(mSwapChain, (REFIID)&IID_IDXGISwapChain3, (LPVOID*)(&mSwapChain3));
-
-	// root signature here
-	// do not use a root signature ... we do not have shaders here 
-
-	// PSO here 
-	// do not use a pipeline state object ... we do not have shaders
-	mPSO = NULL;
-
-	// Describe and create a render target view (RTV) descriptor heap.
-	static D3D12_DESCRIPTOR_HEAP_DESC descHeap;
-	descHeap.NumDescriptors = FRAMECOUNT;
-	descHeap.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
-	descHeap.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE; // RTV is not shader visible
-	ThrowIfFailed(mDevice->lpVtbl->CreateDescriptorHeap(mDevice, &descHeap, (REFIID)&IID_ID3D12DescriptorHeap, (LPVOID*)(&mDescriptorHeap)));
-
-	mrtvDescriptorIncrSize = mDevice->lpVtbl->GetDescriptorHandleIncrementSize(mDevice, D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-
-	// Create frame resources
-	D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle;
-//	rtvHandle = mDescriptorHeap->lpVtbl->GetCPUDescriptorHandleForHeapStart(mDescriptorHeap);
-	// bug in C calling support in DirectX 12
-	((void(__stdcall*)(ID3D12DescriptorHeap*, D3D12_CPU_DESCRIPTOR_HANDLE*)) mDescriptorHeap->lpVtbl->GetCPUDescriptorHandleForHeapStart)(mDescriptorHeap, &rtvHandle);
-
-
-	// Create a RTV for each frame.
-	for (UINT n = 0; n < FRAMECOUNT; n++)
-	{
-		ThrowIfFailed(mSwapChain->lpVtbl->GetBuffer(mSwapChain, n, (REFIID)&IID_ID3D12Resource, (LPVOID*)(&mRenderTarget[n]))); //IID_PPV_ARGS(&m_renderTargets[n])));
-		mDevice->lpVtbl->CreateRenderTargetView(mDevice, mRenderTarget[n], NULL, rtvHandle);
-		rtvHandle.ptr += mrtvDescriptorIncrSize;
-	}
-
-	// allocate memory for a command list and create one
-	mDevice->lpVtbl->CreateCommandAllocator(mDevice, D3D12_COMMAND_LIST_TYPE_DIRECT, (REFIID)&IID_ID3D12CommandAllocator, (LPVOID*)(&mCommandAllocator));
-	mDevice->lpVtbl->CreateCommandList(mDevice, 0, D3D12_COMMAND_LIST_TYPE_DIRECT, mCommandAllocator, mPSO, (REFIID)&IID_ID3D12CommandList, (LPVOID*)(&mCommandList));
-
-	// Command lists are created in the recording state, but there is nothing
-	// to record yet. The main loop expects it to be closed, so close it now.
-	ThrowIfFailed(mCommandList->lpVtbl->Close(mCommandList));
-
-
-	// Create and initialize the fence.
-	ThrowIfFailed(mDevice->lpVtbl->CreateFence(mDevice, 0, D3D12_FENCE_FLAG_NONE, (REFIID)&IID_ID3D12Fence, (LPVOID*)(&mFence)));
-	mCurrentFence = 1;
-
-
-	// Create an event handle to use for frame synchronization.
-	mfenceEvent = CreateEventEx(NULL, FALSE, FALSE, EVENT_ALL_ACCESS);
-
-	// in a bigger app you want to wait here until all the assets are uploaded -> WaitForPreviousFrame()
-
-	// setup timer 
-	StartTime = GetTickCount();
-	CurrentTime = 0;
-
-	// set the game loop to running by default
-	BRunning = TRUE;
-	static MSG msg;
-
-	while (BRunning)
-	{
-#if defined(WELLBEHAVIOUR)
-		// Just remove the message
-		PeekMessage(&msg, hWnd, 0, 0, PM_REMOVE);
-#endif
-		// Calculate the current demo time
-		CurrentTime = GetTickCount() - StartTime;
-
-		// go out of game loop and shutdown
-		if (CurrentTime > 3300 || GetAsyncKeyState(VK_ESCAPE)) 
-			BRunning = FALSE;
-
-		// Command list allocators can only be reset when the associated 
-		// command lists have finished execution on the GPU; apps should use 
-		// fences to determine GPU execution progress.
-		ThrowIfFailed(mCommandAllocator->lpVtbl->Reset(mCommandAllocator));
-
-		// However, when ExecuteCommandList() is called on a particular command 
-		// list, that command list can then be reset at any time and must be before 
-		// re-recording.
-		ThrowIfFailed(mCommandList->lpVtbl->Reset(mCommandList, mCommandAllocator, mPSO));
-
-		// Indicate that the back buffer will be used as a render target.
-		D3D12_RESOURCE_BARRIER barrierRTAsTexture =
+		if (!SUCCEEDED(hardware_driver))
 		{
-			D3D12_RESOURCE_BARRIER_TYPE_TRANSITION,
-			D3D12_RESOURCE_BARRIER_FLAG_NONE,
-			{ mRenderTarget[mframeIndex], D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET }
-		};
+			IDXGIAdapter* pWarpAdapter;
+			ThrowIfFailed(pFactory->lpVtbl->EnumWarpAdapter(pFactory, (REFIID)&IID_IDXGIAdapter3, (LPVOID*)(&pWarpAdapter)));
 
-		mCommandList->lpVtbl->ResourceBarrier(mCommandList, 1, &barrierRTAsTexture);
+			ThrowIfFailed(D3D12CreateDevice(
+				pWarpAdapter,
+				D3D_FEATURE_LEVEL_11_0,
+				(REFIID)&IID_ID3D12Device, (LPVOID*)(&mDevice)
+			));
+		}
+#endif
 
-		// bug in DirectX 12 ... missing C calling convention support
-//		rtvHandle = mDescriptorHeap->lpVtbl->GetCPUDescriptorHandleForHeapStart(mDescriptorHeap);
+		static D3D12_COMMAND_QUEUE_DESC queueDesc;
+		queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
+		queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
+		ThrowIfFailed(mDevice->lpVtbl->CreateCommandQueue(mDevice, &queueDesc, (REFIID)&IID_ID3D12CommandQueue, (LPVOID*)(&mCommandQueue)));
+
+		// Describe the swap chain.
+		static DXGI_SWAP_CHAIN_DESC descSwapChain;
+		descSwapChain.BufferCount = FRAMECOUNT;
+		descSwapChain.BufferDesc.Width = WINWIDTH;
+		descSwapChain.BufferDesc.Height = WINHEIGHT;
+		descSwapChain.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+		descSwapChain.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+		descSwapChain.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+		descSwapChain.OutputWindow = hWnd;
+		descSwapChain.SampleDesc.Count = 1;
+		descSwapChain.Windowed = TRUE;
+
+		IDXGISwapChain* SwapChain;
+		pFactory->lpVtbl->CreateSwapChain(pFactory,
+			mCommandQueue,		// Swap chain needs the queue so that it can force a flush on it.
+			&descSwapChain,
+			&SwapChain);
+
+		// we need a swap chain 3 interface ...
+		SwapChain->lpVtbl->QueryInterface(SwapChain, (REFIID)&IID_IDXGISwapChain3, (LPVOID*)(&mSwapChain3));
+
+
+#if defined(WELLBEHAVIOUR)
+		SwapChain->lpVtbl->Release(SwapChain);
+#endif
+
+		// root signature here
+		// do not use a root signature ... we do not have shaders here
+
+		// PSO here
+		// do not use a pipeline state object ... we do not have shaders
+		mPSO = NULL;
+
+		// Describe and create a render target view (RTV) descriptor heap.
+		static D3D12_DESCRIPTOR_HEAP_DESC descHeap;
+		descHeap.NumDescriptors = FRAMECOUNT;
+		descHeap.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
+		descHeap.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE; // RTV is not shader visible
+		ThrowIfFailed(mDevice->lpVtbl->CreateDescriptorHeap(mDevice, &descHeap, (REFIID)&IID_ID3D12DescriptorHeap, (LPVOID*)(&mDescriptorHeap)));
+
+		mrtvDescriptorIncrSize = mDevice->lpVtbl->GetDescriptorHandleIncrementSize(mDevice, D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+
+		// Create frame resources
+		D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle;
+		//rtvHandle = mDescriptorHeap->lpVtbl->GetCPUDescriptorHandleForHeapStart(mDescriptorHeap);
+		// bug in C calling support in DirectX 12
 		((void(__stdcall*)(ID3D12DescriptorHeap*, D3D12_CPU_DESCRIPTOR_HANDLE*)) mDescriptorHeap->lpVtbl->GetCPUDescriptorHandleForHeapStart)(mDescriptorHeap, &rtvHandle);
 
-		rtvHandle.ptr += mframeIndex * mrtvDescriptorIncrSize;
-
-
-		// Record commands.
-		float clearColor[] = { 0.0f, 0.2f, 0.4f, 1.0f };
-		mCommandList->lpVtbl->ClearRenderTargetView(mCommandList, rtvHandle, clearColor, 0, NULL);
-
-		// Indicate that the back buffer will now be used to present.
-		D3D12_RESOURCE_BARRIER barrierRTForPresent =
+		// Create a RTV for each frame.
+		for (UINT n = 0; n < FRAMECOUNT; n++)
 		{
-			D3D12_RESOURCE_BARRIER_TYPE_TRANSITION,
-			D3D12_RESOURCE_BARRIER_FLAG_NONE,
-			{ mRenderTarget[mframeIndex], D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT }
-		};
+			ThrowIfFailed(mSwapChain3->lpVtbl->GetBuffer(mSwapChain3, n, (REFIID)&IID_ID3D12Resource, (LPVOID*)(&mRenderTarget[n]))); //IID_PPV_ARGS(&m_renderTargets[n])));
+			mDevice->lpVtbl->CreateRenderTargetView(mDevice, mRenderTarget[n], NULL, rtvHandle);
+			rtvHandle.ptr += mrtvDescriptorIncrSize;
+		}
 
-		mCommandList->lpVtbl->ResourceBarrier(mCommandList, 1, &barrierRTForPresent);
+		// allocate memory for a command list and create one
+		mDevice->lpVtbl->CreateCommandAllocator(mDevice, D3D12_COMMAND_LIST_TYPE_DIRECT, (REFIID)&IID_ID3D12CommandAllocator, (LPVOID*)(&mCommandAllocator));
+		mDevice->lpVtbl->CreateCommandList(mDevice, 0, D3D12_COMMAND_LIST_TYPE_DIRECT, mCommandAllocator, mPSO, (REFIID)&IID_ID3D12CommandList, (LPVOID*)(&mCommandList));
 
+		// Command lists are created in the recording state, but there is nothing
+		// to record yet. The main loop expects it to be closed, so close it now.
 		ThrowIfFailed(mCommandList->lpVtbl->Close(mCommandList));
 
-		// Execute the command list.
-		ID3D12CommandList* ppCommandLists[] = { mCommandList };
-		mCommandQueue->lpVtbl->ExecuteCommandLists(mCommandQueue, _countof(ppCommandLists), ppCommandLists);
+		// Create and initialize the fence.
+		ThrowIfFailed(mDevice->lpVtbl->CreateFence(mDevice, 0, D3D12_FENCE_FLAG_NONE, (REFIID)&IID_ID3D12Fence, (LPVOID*)(&mFence)));
+		mCurrentFence = 1;
 
-		// Present and move to the next back buffer.
-		ThrowIfFailed(mSwapChain->lpVtbl->Present(mSwapChain, 1, 0));
-	//	mframeIndex = (1 + mframeIndex) % FRAMECOUNT;
+		// Create an event handle to use for frame synchronization.
+		mfenceEvent = CreateEventEx(NULL, FALSE, FALSE, EVENT_ALL_ACCESS);
 
-		WaitForPreviousFrame();
-	}
+		// in a bigger app you want to wait here until all the assets are uploaded -> WaitForPreviousFrame()
+
+		// setup timer
+		StartTime = GetTickCount();
+		CurrentTime = 0;
+
+		// set the game loop to running by default
+		BRunning = TRUE;
+		static MSG msg;
+
+		while (BRunning)
+		{
+#if defined(WELLBEHAVIOUR)
+			// Just remove the message
+			PeekMessage(&msg, hWnd, 0, 0, PM_REMOVE);
+#endif
+
+			// Calculate the current demo time
+			CurrentTime = GetTickCount() - StartTime;
+
+			// go out of game loop and shutdown
+			if (CurrentTime > 3300 || GetAsyncKeyState(VK_ESCAPE))
+				BRunning = FALSE;
+
+			// Command list allocators can only be reset when the associated
+			// command lists have finished execution on the GPU; apps should use
+			// fences to determine GPU execution progress.
+			ThrowIfFailed(mCommandAllocator->lpVtbl->Reset(mCommandAllocator));
+
+			// However, when ExecuteCommandList() is called on a particular command
+			// list, that command list can then be reset at any time and must be before
+			// re-recording.
+			ThrowIfFailed(mCommandList->lpVtbl->Reset(mCommandList, mCommandAllocator, mPSO));
+
+			// Indicate that the back buffer will be used as a render target.
+			D3D12_RESOURCE_BARRIER barrierRTAsTexture =
+			{
+				D3D12_RESOURCE_BARRIER_TYPE_TRANSITION,
+				D3D12_RESOURCE_BARRIER_FLAG_NONE,
+				{ mRenderTarget[mframeIndex], D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET }
+			};
+
+			mCommandList->lpVtbl->ResourceBarrier(mCommandList, 1, &barrierRTAsTexture);
+
+			// bug in DirectX 12 ... missing C calling convention support
+			//		rtvHandle = mDescriptorHeap->lpVtbl->GetCPUDescriptorHandleForHeapStart(mDescriptorHeap);
+			((void(__stdcall*)(ID3D12DescriptorHeap*, D3D12_CPU_DESCRIPTOR_HANDLE*)) mDescriptorHeap->lpVtbl->GetCPUDescriptorHandleForHeapStart)(mDescriptorHeap, &rtvHandle);
+
+			rtvHandle.ptr += mframeIndex * mrtvDescriptorIncrSize;
+
+			// Record commands.
+			float clearColor[] = { 0.0f, 0.2f, 0.4f, 1.0f };
+			mCommandList->lpVtbl->ClearRenderTargetView(mCommandList, rtvHandle, clearColor, 0, NULL);
+
+			// Indicate that the back buffer will now be used to present.
+			D3D12_RESOURCE_BARRIER barrierRTForPresent =
+			{
+				D3D12_RESOURCE_BARRIER_TYPE_TRANSITION,
+				D3D12_RESOURCE_BARRIER_FLAG_NONE,
+				{ mRenderTarget[mframeIndex], D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT }
+			};
+
+			mCommandList->lpVtbl->ResourceBarrier(mCommandList, 1, &barrierRTForPresent);
+
+			ThrowIfFailed(mCommandList->lpVtbl->Close(mCommandList));
+
+			// Execute the command list.
+			ID3D12CommandList* ppCommandLists[] = { mCommandList };
+			mCommandQueue->lpVtbl->ExecuteCommandLists(mCommandQueue, _countof(ppCommandLists), ppCommandLists);
+
+			// Present and move to the next back buffer.
+			ThrowIfFailed(mSwapChain3->lpVtbl->Present(mSwapChain3, 1, 0));
+			//	mframeIndex = (1 + mframeIndex) % FRAMECOUNT;
+
+			WaitForPreviousFrame();
+		}
 
 #if defined(WELLBEHAVIOUR)
-	// Wait for the GPU to be done with all resources.
-	WaitForPreviousFrame();
+		// Wait for the GPU to be done with all resources.
+		WaitForPreviousFrame();
 
-	// close the fence event
-	CloseHandle(mfenceEvent);
+		// close the fence event
+		CloseHandle(mfenceEvent);
 
-	mDevice->lpVtbl->Release(mDevice);
-	mSwapChain->lpVtbl->Release(mSwapChain);
-	// release all the render targets
-	for (UINT n = 0; n < FRAMECOUNT; n++)
-	{
-		mRenderTarget[n]->lpVtbl->Release(mRenderTarget[n]);
-	}
-	mCommandAllocator->lpVtbl->Release(mCommandAllocator);
-	mCommandQueue->lpVtbl->Release(mCommandQueue);
-	mDescriptorHeap->lpVtbl->Release(mDescriptorHeap);
-	mCommandList->lpVtbl->Release(mCommandList);
-	//		mPSO->Release();
-	mFence->lpVtbl->Release(mFence);
+		mDevice->lpVtbl->Release(mDevice);
+		mSwapChain3->lpVtbl->Release(mSwapChain3);
+
+		// release all the render targets
+		for (UINT n = 0; n < FRAMECOUNT; n++)
+		{
+			mRenderTarget[n]->lpVtbl->Release(mRenderTarget[n]);
+		}
+
+		mCommandAllocator->lpVtbl->Release(mCommandAllocator);
+		mCommandQueue->lpVtbl->Release(mCommandQueue);
+		mDescriptorHeap->lpVtbl->Release(mDescriptorHeap);
+		mCommandList->lpVtbl->Release(mCommandList);
+		//		mPSO->Release();
+		mFence->lpVtbl->Release(mFence);
 #endif
 
 #if defined(REGULARENTRYPOINT)
-    return (int) msg.wParam;
+		return (int)msg.wParam;
 #else
 	}
-
 	ExitProcess(0);
 #endif
 }
