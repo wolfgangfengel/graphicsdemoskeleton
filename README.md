@@ -11,3 +11,9 @@ The idea is that these examples can be used as a starting point in graphics demo
 Useful References:
 
 http://www.codeproject.com/Articles/15156/Tiny-C-Runtime-Library
+
+Another useful reference to understand this code:
+Il semble que la perfection soit atteinte non quand il n'y a plus rien à ajouter, mais quand il n'y a plus rien à retrancher.
+As translated by Lewis Galantière: ... perfection is finally attained not when there is no longer anything to add, but when there is no longer anything to take away ...
+
+https://en.wikiquote.org/wiki/Antoine_de_Saint_Exup%C3%A9ry
