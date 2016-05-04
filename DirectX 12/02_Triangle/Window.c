@@ -224,7 +224,7 @@ __declspec(naked)  void __cdecl winmain()
 			ThrowIfFailed(pFactory->lpVtbl->EnumWarpAdapter(pFactory, (REFIID)&IID_IDXGIAdapter3, (LPVOID*)(&pWarpAdapter)));
 
 			ThrowIfFailed(D3D12CreateDevice(
-				pWarpAdapter,
+				(IUnknown *)pWarpAdapter,
 				D3D_FEATURE_LEVEL_11_0,
 				(REFIID)&IID_ID3D12Device, (LPVOID*)(&mDevice)
 			));
@@ -250,7 +250,7 @@ __declspec(naked)  void __cdecl winmain()
 
 		IDXGISwapChain* SwapChain;
 		pFactory->lpVtbl->CreateSwapChain(pFactory,
-			mCommandQueue,		// Swap chain needs the queue so that it can force a flush on it.
+			(IUnknown *)mCommandQueue,		// Swap chain needs the queue so that it can force a flush on it.
 			&descSwapChain,
 			&SwapChain);
 
@@ -506,7 +506,7 @@ __declspec(naked)  void __cdecl winmain()
 			ThrowIfFailed(mCommandList->lpVtbl->Close(mCommandList));
 
 			// Execute the command list.
-			ID3D12CommandList* ppCommandLists[] = { mCommandList };
+			ID3D12CommandList* ppCommandLists[] = { (ID3D12CommandList *) mCommandList };
 			mCommandQueue->lpVtbl->ExecuteCommandLists(mCommandQueue, _countof(ppCommandLists), ppCommandLists);
 
 			// Present and move to the next back buffer.
@@ -526,6 +526,8 @@ __declspec(naked)  void __cdecl winmain()
 		mDevice->lpVtbl->Release(mDevice);
 		mSwapChain3->lpVtbl->Release(mSwapChain3);
 
+		mBufVerts->lpVtbl->Release(mBufVerts);
+
 		// release all the render targets
 		for (UINT n = 0; n < FRAMECOUNT; n++)
 		{
@@ -539,7 +541,6 @@ __declspec(naked)  void __cdecl winmain()
 		mPSO->lpVtbl->Release(mPSO);
 		mFence->lpVtbl->Release(mFence);
 		mRootSignature->lpVtbl->Release(mRootSignature);
-
 #endif
 
 #if defined(REGULARENTRYPOINT)
