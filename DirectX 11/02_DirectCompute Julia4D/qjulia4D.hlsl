@@ -135,7 +135,8 @@ float3 normEstimate(float3 p, float4 c)
    float4 gz1 = qP - float4( 0, 0, DEL, 0 );
    float4 gz2 = qP + float4( 0, 0, DEL, 0 );
 
-   for( int i=0; i<ITERATIONS; i++ )
+   // Keep the six quaternion orbits in a loop to reduce embedded shader size.
+   [loop] for( int i=0; i<ITERATIONS; i++ )
    {
       gx1 = quatSq( gx1 ) + c;
       gx2 = quatSq( gx2 ) + c;
@@ -256,7 +257,7 @@ float3 Phong( float3 light, float3 eye, float3 pt, float3 N )
    float3 L     = normalize( light - pt );  // find the vector to the light
    float3 E     = normalize( eye   - pt );  // find the vector to the eye
    float  NdotL = dot( N, L );              // find the cosine of the angle between light and normal
-   float3 R     = L - 2 * NdotL * N;        // find the reflected vector
+   float3 R     = reflect( -L, N );        // incident light reflected toward the viewer
 
    diffuse = c_diffuse.xyz + abs( N )*0.3;  // add some of the normal to the
                              // color to make it more interesting
@@ -351,7 +352,7 @@ float4 QJulia( float3 rO ,                // ray origin
       float3 N = normEstimate( rO, mu);
 
       // Compute the Phong illumination at the point of intersection.
-      color.rgb = Phong( light, rD, rO, N );
+      color.rgb = Phong( light, eye, rO, N );
       color.a = 1;  // (make this fragment opaque)
 
       // If the shadow flag is on, determine if this point is in shadow
@@ -384,6 +385,7 @@ float4 QJulia( float3 rO ,                // ray origin
 void CS_QJulia4D( uint3 Gid : SV_GroupID, uint3 DTid : SV_DispatchThreadID, uint3 GTid : SV_GroupThreadID, uint GI : SV_GroupIndex )
 //****************************************************************************
 { 
+    if (DTid.x >= (uint)c_width || DTid.y >= (uint)c_height) return;
     float4 coord = float4((float)DTid.x, (float)DTid.y, 0.0f, 0.0f);
 
     float2 size     = float2(c_width, c_height);

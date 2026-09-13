@@ -43,39 +43,17 @@ DEFINE_GUIDW(IID_ID3D11Texture2D,0x6f15aaf2,0xd208,0x4e89,0x9a,0xb4,0x48,0x95,0x
 // Random number generator
 // see http://www.codeproject.com/KB/recipes/SimpleRNG.aspx
 
-// These values are not magical, just the default values Marsaglia used.
-// Any pair of unsigned integers should be fine.
+// One-word linear congruential generator keeps the intro's state and code small.
 static unsigned int m_w = 521288629;
-//static unsigned int m_z = 362436069;
-#define MZ ((36969 * (362436069 & 65535) + (362436069 >> 16)) << 16)
 
-static void SetSeed(unsigned int u)
-{
-	m_w = u;
-}
+static void SetSeed(unsigned int u) { m_w = u; }
+static unsigned int GetUint() { return m_w = 1664525u * m_w + 1013904223u; }
 
-// This is the heart of the generator.
-// It uses George Marsaglia's MWC algorithm to produce an unsigned integer.
-// See http://www.bobwheeler.com/statistics/Password/MarsagliaPost.txt
-static unsigned int GetUint()
-{
-//	m_z = 36969 * (m_z & 65535) + (m_z >> 16);
-	m_w = 18000 * (m_w & 65535) + (m_w >> 16);
-	return (MZ) + m_w;
-}
-
-// Produce a uniform random sample from the interval (-1, 1).
-// The method will not return either end point.
+// A 24-bit sample in [-1, 1).
 static float GetUniform()
 {
-    // 0 <= u < 2^32
-    unsigned int u = GetUint();
-	// The magic number below is 1/(2^32 + 2).
-    // The result is strictly between 0 and 1.
-	return (u) * (float) 2.328306435454494e-10 * 2.0f;
+    return (float)(GetUint() >> 8) * (1.0f / 8388608.0f) - 1.0f;
 }
-
-
 static void 
 Interpolate( float m[4], float t, float a[4], float b[4] )
 {
@@ -221,11 +199,15 @@ __declspec( naked )  void __cdecl winmain()
 	temp.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT | DXGI_USAGE_UNORDERED_ACCESS | DXGI_USAGE_SHADER_INPUT;
 	temp.OutputWindow = hWnd;
 
- 	D3D11CreateDeviceAndSwapChain(
+	HRESULT deviceResult = D3D11CreateDeviceAndSwapChain(
 			NULL,
 			D3D_DRIVER_TYPE_HARDWARE,
 			NULL, 
+			#if defined(_DEBUG)
 			D3D11_CREATE_DEVICE_DEBUG,
+#else
+			D3D11_CREATE_DEVICE_SINGLETHREADED,
+#endif
 			NULL,
 			0,
 			D3D11_SDK_VERSION,
@@ -234,6 +216,7 @@ __declspec( naked )  void __cdecl winmain()
 			&pd3dDevice,
 			NULL,
 			&pImmediateContext);
+	if (FAILED(deviceResult)) ExitProcess((UINT)deviceResult);
 	
 	// get access to the back buffer via a texture
   	ID3D11Texture2D* pTexture;
@@ -356,20 +339,25 @@ __declspec( naked )  void __cdecl winmain()
 	{
 #if defined(WELLBEHAVIOUR)
 		// Just remove the message
-		PeekMessage(&msg, hWnd, 0, 0, PM_REMOVE);
+		while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
+		{
+			if (msg.message == WM_QUIT || msg.message == WM_CLOSE) ExitProcess(0);
+			TranslateMessage(&msg);
+			DispatchMessage(&msg);
+		}
 #endif
 		// Calculate the current demo time
-		CurrentTime = GetTickCount() - StartTime;
+		DWORD frameTime = GetTickCount() - StartTime;
+		dt = (frameTime - CurrentTime) * (1.0f / 200.0f);
+		CurrentTime = frameTime;
 
 		// go out of game loop and shutdown
 		if (CurrentTime > 30000 
 #if defined(WELLBEHAVIOUR) 
-			|| GetAsyncKeyState(VK_ESCAPE)
+			|| (GetAsyncKeyState(VK_ESCAPE) & 0x8000)
 #endif
 			)
 			BStopRunning = TRUE;
-
-		dt = CurrentTime / (20000.0f);
 
 	    UpdateMu( &MuT, MuA, MuB );
  	    Interpolate( MuC, MuT, MuA, MuB );
@@ -400,32 +388,32 @@ __declspec( naked )  void __cdecl winmain()
     	mc->mu[2] = MuC[2];
     	mc->mu[3] = MuC[3];
 		mc->orientation[0] = 1.0;
-//		mc->orientation[1] = 0.0;
-//		mc->orientation[2] = 0.0;
-//		mc->orientation[3] = 0.0;
-//		mc->orientation[4] = 0.0;
+		mc->orientation[1] = 0.0;
+		mc->orientation[2] = 0.0;
+		mc->orientation[3] = 0.0;
+		mc->orientation[4] = 0.0;
 		mc->orientation[5] = 1.0;
-//		mc->orientation[6] = 0.0;
-//		mc->orientation[7] = 0.0;
-//		mc->orientation[8] = 0.0;
-//		mc->orientation[9] = 0.0;
+		mc->orientation[6] = 0.0;
+		mc->orientation[7] = 0.0;
+		mc->orientation[8] = 0.0;
+		mc->orientation[9] = 0.0;
 		mc->orientation[10] = 1.0;
-//		mc->orientation[11] = 0.0;
-//		mc->orientation[12] = 0.0;
-//		mc->orientation[13] = 0.0;
-//		mc->orientation[14] = 0.0;
+		mc->orientation[11] = 0.0;
+		mc->orientation[12] = 0.0;
+		mc->orientation[13] = 0.0;
+		mc->orientation[14] = 0.0;
 		mc->orientation[15] = 1.0;
     	mc->zoom = zoom;
 		mc->Saturation =  (gSaturation < 0.0f) ? 0.0f : (gSaturation > 1.0f) ? 1.0f : gSaturation;
 		mc->ColorCorrect[0] = 1.5f;
 		mc->ColorCorrect[1] = 0.5f;
 		mc->ColorCorrect[2] = 0.5f;
-//		mc->ColorAdd[0] = 0.0f;
-//		mc->ColorAdd[1] = 0.0f;
-//		mc->ColorAdd[2] = 0.0f;
-//		mc->Contrast[0] = 0.0f;
-//		mc->Contrast[1] = 0.0f;
-//		mc->Contrast[2] = 0.0f;
+		mc->ColorAdd[0] = 0.0f;
+		mc->ColorAdd[1] = 0.0f;
+		mc->ColorAdd[2] = 0.0f;
+		mc->Contrast[0] = 0.0f;
+		mc->Contrast[1] = 0.0f;
+		mc->Contrast[2] = 0.0f;
 
   		pImmediateContext->lpVtbl->Unmap(pImmediateContext, (ID3D11Resource *)pcbFractal,0);
 
@@ -465,7 +453,7 @@ __declspec( naked )  void __cdecl winmain()
 		// Run the CS
 		pImmediateContext->lpVtbl->Dispatch(pImmediateContext, WINWIDTH / THREADSX, WINHEIGHT / THREADSY, 1);
 
-#if defined(_DEBUG)
+#if defined(WELLBEHAVIOUR)
 		// set back the shader resource view to zero
 		ID3D11ShaderResourceView* pNull = NULL;
 		pImmediateContext->lpVtbl->CSSetShaderResources(pImmediateContext, 0, 1, &pNull);
@@ -478,10 +466,13 @@ __declspec( naked )  void __cdecl winmain()
 	// release all D3D device related resources
 #if defined(WELLBEHAVIOUR)
 	    pImmediateContext->lpVtbl->ClearState(pImmediateContext);
+		pImmediateContext->lpVtbl->Release(pImmediateContext);
 	    pd3dDevice->lpVtbl->Release(pd3dDevice);
 	    pSwapChain->lpVtbl->Release(pSwapChain);	 
 	    pTexture->lpVtbl->Release(pTexture);	
     	pcbFractal->lpVtbl->Release(pcbFractal);
+		pCompiledComputeShader->lpVtbl->Release(pCompiledComputeShader);
+		pCompiledPostFXComputeShader->lpVtbl->Release(pCompiledPostFXComputeShader);
 		pStructuredBuffer->lpVtbl->Release(pStructuredBuffer);
 		pComputeOutputUAV->lpVtbl->Release(pComputeOutputUAV);
 		pComputeShaderSRV->lpVtbl->Release(pComputeShaderSRV);

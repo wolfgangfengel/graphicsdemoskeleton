@@ -59,7 +59,7 @@ void PostFX( uint3 Gid : SV_GroupID, uint3 DTid : SV_DispatchThreadID, uint3 GTi
 	// wait until the data is written
 	GroupMemoryBarrierWithGroupSync();
 
-	float3 Color;
+	float3 Color = 0;
 
 	//
 	// the decision between using thread group shared memory or register based memory depends on 
@@ -69,7 +69,7 @@ void PostFX( uint3 Gid : SV_GroupID, uint3 DTid : SV_DispatchThreadID, uint3 GTi
 	// make sure we are not running out of bounds
 	// also no memory barrier inside an if statement 
 	// -> everything in if statement is only reading thread group shared memory or is in register based memory
-	if (idx < (c_width * c_height - 1))
+	if (idx < (c_width * c_height))
 	{
 		// load from thread group shared memory to register based memory
 		// register based memory doesn't need a barrier 

@@ -1,4 +1,5 @@
-SET PATH=C:\Program Files (x86)\Windows Kits\10\Lib\10.0.10240.0\um\x86;C:\Windows\SysWOW64;C:\Windows\System32
-Tools\crinkler20\crinkler.exe /OUT:Intro.exe /HASHTRIES:500 /SUBSYSTEM:WINDOWS /COMPMODE:SLOW /ORDERTRIES:5000 /TRUNCATEFLOATS:16 /HASHSIZE:500 /PRINT:LABELS /PRINT:IMPORTS /ENTRY:winmain /PRINT:LABELS /REPORT:report.html /RANGE:d3d12.dll dxgi.lib kernel32.lib user32.lib d3d12.lib Win32\Release\Window.obj > Compression.log
-copy /B /Y Intro.exe Final\Intro.exe
-
+@echo off
+setlocal
+rem Uses the shared Tools\Crinkler3.0b distribution through Build.ps1.
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0..\..\Build.ps1" -Project "%~dp0GraphicsDemo.vcxproj" -Configuration Release -Compress %*
+exit /b %errorlevel%

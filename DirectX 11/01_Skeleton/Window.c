@@ -103,7 +103,7 @@ __declspec( naked )  void __cdecl winmain()
 	temp = sd;
 	temp.OutputWindow = hWnd;
 
- 	D3D11CreateDeviceAndSwapChain(
+	HRESULT deviceResult = D3D11CreateDeviceAndSwapChain(
 			NULL,					// might fail with two adapters in machine
 			D3D_DRIVER_TYPE_HARDWARE,
 			NULL, 
@@ -116,6 +116,7 @@ __declspec( naked )  void __cdecl winmain()
 			&pd3dDevice,
 			NULL,
 			&pImmediateContext);
+	if (FAILED(deviceResult)) ExitProcess((UINT)deviceResult);
 
 
 	// Create a back buffer render target, get a view on it to clear it later
@@ -140,13 +141,18 @@ __declspec( naked )  void __cdecl winmain()
 	{
 #if defined(WELLBEHAVIOUR)
 		// Just remove the message
-		PeekMessage(&msg, hWnd, 0, 0, PM_REMOVE);
+		while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
+		{
+			if (msg.message == WM_QUIT || msg.message == WM_CLOSE) ExitProcess(0);
+			TranslateMessage(&msg);
+			DispatchMessage(&msg);
+		}
 #endif
 		// Calculate the current demo time
 		CurrentTime = GetTickCount() - StartTime;
 
 		// go out of game loop and shutdown
-		if (CurrentTime > 3300 || GetAsyncKeyState(VK_ESCAPE)) 
+		if (CurrentTime > 3300 || (GetAsyncKeyState(VK_ESCAPE) & 0x8000))
 			BRunning = FALSE;
 
    		static const float ClearColor[4] = { 0.0f, 0.125f, 0.3f, 1.0f };
@@ -159,6 +165,7 @@ __declspec( naked )  void __cdecl winmain()
 	// release all D3D device related resources
 #if defined(WELLBEHAVIOUR)
 	    pImmediateContext->lpVtbl->ClearState(pImmediateContext);
+		pImmediateContext->lpVtbl->Release(pImmediateContext);
 	    pd3dDevice->lpVtbl->Release(pd3dDevice);
 	    pRenderTargetView->lpVtbl->Release(pRenderTargetView);
 	    pSwapChain->lpVtbl->Release(pSwapChain);	 

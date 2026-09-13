@@ -18,3 +18,8 @@ DirectX 12/01_Skeleton/Window.c.bak
 DirectX 12/02_Triangle/Win32/Debug/GraphicsDemo.log
 *.pdb
 DirectX 12/02_Triangle/Win32/Debug/Window.obj
+
+# Fresh ordinary/packed builds and validation artifacts.
+build/
+.vs/
+*.vcxproj.user
