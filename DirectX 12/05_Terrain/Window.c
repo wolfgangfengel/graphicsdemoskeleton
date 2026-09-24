@@ -1,0 +1,214 @@
+////////////////////////////////////////////////////////////////////////
+// Mountains by David Hoskins, 2013. HLSL port: see LICENSE-Mountains.txt.
+// DirectX 12 compute shader, custom x86 entry point, no C runtime.
+////////////////////////////////////////////////////////////////////////
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#include <initguid.h>
+#include <d3d12.h>
+#include <dxgi1_4.h>
+struct ID3D10Effect;
+#include <d3dcompiler.h>
+#include "Terrain.source.h"
+
+#define WINWIDTH 1280
+#define WINHEIGHT 720
+#define WINPOSX 200
+#define WINPOSY 200
+#define FRAMECOUNT 2
+
+/* Seconds, resolution, and mouse time shift, as in the DX11 demo. */
+static float mConstants[4] = { 0, WINWIDTH, WINHEIGHT, 0 };
+
+static ID3D12Device *mDevice;
+static IDXGISwapChain3 *mSwapChain3;
+static ID3D12Resource *mRenderTarget[FRAMECOUNT], *mOutput;
+static ID3D12CommandQueue *mCommandQueue;
+static ID3D12CommandAllocator *mCommandAllocator;
+static ID3D12GraphicsCommandList *mCommandList;
+static ID3D12DescriptorHeap *mDescriptorHeap;
+static D3D12_GPU_DESCRIPTOR_HANDLE mOutputView;
+static ID3D12RootSignature *mRootSignature;
+static ID3D12PipelineState *mPSO;
+static ID3D12Fence *mFence;
+static UINT mCurrentFence; /* A 30-second run cannot reach 2^32 frames. */
+
+static void ThrowIfFailed(HRESULT result)
+{
+    if (FAILED(result)) ExitProcess((UINT)result);
+}
+
+static void InitializeTerrain(void)
+{
+    static D3D12_COMPUTE_PIPELINE_STATE_DESC pipeline = {
+        NULL, { 0 }, 0, { 0 }, D3D12_PIPELINE_STATE_FLAG_NONE
+    };
+    static const D3D12_HEAP_PROPERTIES heap = { D3D12_HEAP_TYPE_DEFAULT, 0, 0, 1, 1 };
+    static const D3D12_RESOURCE_DESC texture = {
+        D3D12_RESOURCE_DIMENSION_TEXTURE2D, 0, WINWIDTH, WINHEIGHT, 1, 1,
+        DXGI_FORMAT_R8G8B8A8_UNORM, { 1, 0 }, D3D12_TEXTURE_LAYOUT_UNKNOWN,
+        D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS
+    };
+    static const D3D12_DESCRIPTOR_HEAP_DESC descriptors = {
+        D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 1, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE, 0
+    };
+    D3D12_CPU_DESCRIPTOR_HANDLE view;
+    ID3DBlob *bytecode;
+    ThrowIfFailed(D3DCompile(source_CS_Terrain, sizeof(source_CS_Terrain)-1, NULL, NULL, NULL,
+        "CS_Terrain", "cs_5_0", D3DCOMPILE_OPTIMIZATION_LEVEL1,
+        D3DCOMPILE_FLAGS2_FORCE_ROOT_SIGNATURE_1_0, &bytecode, NULL));
+    /* Preserve root signature 1.0 in the runtime-compiled shader. */
+    pipeline.CS.pShaderBytecode = bytecode->lpVtbl->GetBufferPointer(bytecode);
+    pipeline.CS.BytecodeLength = bytecode->lpVtbl->GetBufferSize(bytecode);
+    ThrowIfFailed(mDevice->lpVtbl->CreateRootSignature(mDevice, 0, pipeline.CS.pShaderBytecode, pipeline.CS.BytecodeLength, &IID_ID3D12RootSignature, (void **)&mRootSignature));
+    pipeline.pRootSignature = mRootSignature;
+    ThrowIfFailed(mDevice->lpVtbl->CreateComputePipelineState(mDevice, &pipeline, &IID_ID3D12PipelineState, (void **)&mPSO));
+    bytecode->lpVtbl->Release(bytecode);
+    ThrowIfFailed(mDevice->lpVtbl->CreateCommittedResource(mDevice, &heap, 0, &texture, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, NULL, &IID_ID3D12Resource, (void **)&mOutput));
+    ThrowIfFailed(mDevice->lpVtbl->CreateDescriptorHeap(mDevice, &descriptors, &IID_ID3D12DescriptorHeap, (void **)&mDescriptorHeap));
+    /* x86 C++ COM returns these structs through a hidden output pointer. */
+    ((void (__stdcall *)(ID3D12DescriptorHeap *, D3D12_CPU_DESCRIPTOR_HANDLE *))
+        mDescriptorHeap->lpVtbl->GetCPUDescriptorHandleForHeapStart)(mDescriptorHeap, &view);
+    ((void (__stdcall *)(ID3D12DescriptorHeap *, D3D12_GPU_DESCRIPTOR_HANDLE *))
+        mDescriptorHeap->lpVtbl->GetGPUDescriptorHandleForHeapStart)(mDescriptorHeap, &mOutputView);
+    mDevice->lpVtbl->CreateUnorderedAccessView(mDevice, mOutput, NULL, NULL, view);
+}
+
+static void Transition(ID3D12Resource *resource, D3D12_RESOURCE_STATES before, D3D12_RESOURCE_STATES after)
+{
+    D3D12_RESOURCE_BARRIER barrier = { 0 };
+    barrier.Transition.pResource = resource;
+    barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+    barrier.Transition.StateBefore = before;
+    barrier.Transition.StateAfter = after;
+    mCommandList->lpVtbl->ResourceBarrier(mCommandList, 1, &barrier);
+}
+
+static void RecordTerrain(ID3D12Resource *target)
+{
+    ThrowIfFailed(mCommandAllocator->lpVtbl->Reset(mCommandAllocator));
+    ThrowIfFailed(mCommandList->lpVtbl->Reset(mCommandList, mCommandAllocator, mPSO));
+    mCommandList->lpVtbl->SetComputeRootSignature(mCommandList, mRootSignature);
+    mCommandList->lpVtbl->SetComputeRoot32BitConstants(mCommandList, 0, sizeof(mConstants) / 4, &mConstants, 0);
+    mCommandList->lpVtbl->SetDescriptorHeaps(mCommandList, 1, &mDescriptorHeap);
+    mCommandList->lpVtbl->SetComputeRootDescriptorTable(mCommandList, 1, mOutputView);
+    mCommandList->lpVtbl->Dispatch(mCommandList, (WINWIDTH + 7) / 8, (WINHEIGHT + 7) / 8, 1);
+    /* The UAV-to-copy transition also orders the compute writes. */
+    Transition(mOutput, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COPY_SOURCE);
+    Transition(target, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_COPY_DEST);
+    mCommandList->lpVtbl->CopyResource(mCommandList, target, mOutput);
+    Transition(target, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PRESENT);
+    Transition(mOutput, D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+}
+
+static void WaitForPreviousFrame(void)
+{
+    ++mCurrentFence;
+    ThrowIfFailed(mCommandQueue->lpVtbl->Signal(mCommandQueue, mFence, mCurrentFence));
+    /* A null event waits synchronously before allocator/output reuse. */
+    ThrowIfFailed(mFence->lpVtbl->SetEventOnCompletion(mFence, mCurrentFence, NULL));
+}
+
+__declspec(naked) void __cdecl winmain(void)
+{
+    __asm {
+        push ebp
+        mov ebp, esp
+        sub esp, __LOCAL_SIZE
+    }
+    {
+        static const D3D12_COMMAND_QUEUE_DESC queueDesc = { 0 };
+        static DXGI_SWAP_CHAIN_DESC desc = {
+            { WINWIDTH, WINHEIGHT, { 0, 0 }, DXGI_FORMAT_R8G8B8A8_UNORM, 0, 0 },
+            { 1, 0 }, DXGI_USAGE_RENDER_TARGET_OUTPUT, FRAMECOUNT, NULL, TRUE, DXGI_SWAP_EFFECT_FLIP_DISCARD, 0
+        };
+        IDXGIFactory4 *factory;
+        IDXGISwapChain *swapChain;
+        DWORD start, elapsed;
+        UINT n, frameIndex;
+        MSG message;
+        HRESULT result;
+        HWND window = CreateWindowW(L"edit", NULL, WS_POPUP | WS_VISIBLE,
+            WINPOSX, WINPOSY, WINWIDTH, WINHEIGHT, NULL, NULL, NULL, NULL);
+        if (!window) ExitProcess(1);
+        ShowCursor(FALSE);
+#ifdef _DEBUG
+        {
+            ID3D12Debug *debug;
+            if (SUCCEEDED(D3D12GetDebugInterface(&IID_ID3D12Debug, (void **)&debug))) {
+                debug->lpVtbl->EnableDebugLayer(debug);
+                debug->lpVtbl->Release(debug);
+            }
+        }
+#endif
+        ThrowIfFailed(CreateDXGIFactory1(&IID_IDXGIFactory4, (void **)&factory));
+        result = D3D12CreateDevice(NULL, D3D_FEATURE_LEVEL_11_0, &IID_ID3D12Device, (void **)&mDevice);
+#ifdef _DEBUG
+        if (FAILED(result)) {
+            IDXGIAdapter *warp;
+            ThrowIfFailed(factory->lpVtbl->EnumWarpAdapter(factory, &IID_IDXGIAdapter, (void **)&warp));
+            result = D3D12CreateDevice((IUnknown *)warp, D3D_FEATURE_LEVEL_11_0, &IID_ID3D12Device, (void **)&mDevice);
+            warp->lpVtbl->Release(warp);
+        }
+#endif
+        ThrowIfFailed(result);
+        InitializeTerrain();
+        ThrowIfFailed(mDevice->lpVtbl->CreateCommandQueue(mDevice, &queueDesc, &IID_ID3D12CommandQueue, (void **)&mCommandQueue));
+        desc.OutputWindow = window;
+        ThrowIfFailed(factory->lpVtbl->CreateSwapChain(factory, (IUnknown *)mCommandQueue, &desc, &swapChain));
+        ThrowIfFailed(swapChain->lpVtbl->QueryInterface(swapChain, &IID_IDXGISwapChain3, (void **)&mSwapChain3));
+#ifdef _DEBUG
+        swapChain->lpVtbl->Release(swapChain);
+        factory->lpVtbl->Release(factory);
+#endif
+        for (n = 0; n < FRAMECOUNT; ++n)
+            ThrowIfFailed(mSwapChain3->lpVtbl->GetBuffer(mSwapChain3, n, &IID_ID3D12Resource, (void **)&mRenderTarget[n]));
+        ThrowIfFailed(mDevice->lpVtbl->CreateCommandAllocator(mDevice, D3D12_COMMAND_LIST_TYPE_DIRECT, &IID_ID3D12CommandAllocator, (void **)&mCommandAllocator));
+        ThrowIfFailed(mDevice->lpVtbl->CreateCommandList(mDevice, 0, D3D12_COMMAND_LIST_TYPE_DIRECT, mCommandAllocator, mPSO, &IID_ID3D12GraphicsCommandList, (void **)&mCommandList));
+        ThrowIfFailed(mCommandList->lpVtbl->Close(mCommandList));
+        ThrowIfFailed(mDevice->lpVtbl->CreateFence(mDevice, 0, D3D12_FENCE_FLAG_NONE, &IID_ID3D12Fence, (void **)&mFence));
+        start = GetTickCount();
+        for (;;) {
+            while (PeekMessageW(&message, NULL, 0, 0, PM_REMOVE)) {
+                if (message.message == WM_QUIT || message.message == WM_CLOSE ||
+                    (message.hwnd == window && message.message == WM_KEYDOWN && message.wParam == VK_ESCAPE)) goto finished;
+                if (message.hwnd == window && (message.message == WM_LBUTTONDOWN ||
+                    (message.message == WM_MOUSEMOVE && (message.wParam & MK_LBUTTON)))) {
+                    int x = (short)LOWORD(message.lParam);
+                    mConstants[3] = (float)(x < 0 ? 0 : x > WINWIDTH ? WINWIDTH : x);
+                }
+                DispatchMessageW(&message);
+            }
+            elapsed = GetTickCount() - start;
+            if (elapsed > 30000) break;
+            mConstants[0] = (int)elapsed * 0.001f;
+            /* Occlusion need not advance DXGI's current buffer index. */
+            frameIndex = mSwapChain3->lpVtbl->GetCurrentBackBufferIndex(mSwapChain3);
+            RecordTerrain(mRenderTarget[frameIndex]);
+            ThrowIfFailed(mCommandList->lpVtbl->Close(mCommandList));
+            mCommandQueue->lpVtbl->ExecuteCommandLists(mCommandQueue, 1, (ID3D12CommandList *const *)&mCommandList);
+            ThrowIfFailed(mSwapChain3->lpVtbl->Present(mSwapChain3, 1, 0));
+            WaitForPreviousFrame();
+        }
+finished:
+#ifdef _DEBUG
+        /* The per-frame fence completed all work before resource release. */
+        for (n = 0; n < FRAMECOUNT; ++n) mRenderTarget[n]->lpVtbl->Release(mRenderTarget[n]);
+        mCommandList->lpVtbl->Release(mCommandList);
+        mCommandAllocator->lpVtbl->Release(mCommandAllocator);
+        mOutput->lpVtbl->Release(mOutput);
+        mDescriptorHeap->lpVtbl->Release(mDescriptorHeap);
+        mSwapChain3->lpVtbl->Release(mSwapChain3);
+        mFence->lpVtbl->Release(mFence);
+        mCommandQueue->lpVtbl->Release(mCommandQueue);
+        mPSO->lpVtbl->Release(mPSO);
+        mRootSignature->lpVtbl->Release(mRootSignature);
+        mDevice->lpVtbl->Release(mDevice);
+        ShowCursor(TRUE);
+        DestroyWindow(window);
+#else
+        ; /* Release relies on process teardown, as in the other tiny demos. */
+#endif
+    }
+    ExitProcess(0);
+}

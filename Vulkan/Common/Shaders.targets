@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup><VulkanCommonDir>$(MSBuildThisFileDirectory)</VulkanCommonDir><UseSmolv Condition="'$(UseSmolv)'==''">0</UseSmolv></PropertyGroup>
+  <ItemDefinitionGroup><ClCompile><PreprocessorDefinitions Condition="'$(UseSmolv)'=='1'">DEMO_USE_SMOLV;%(PreprocessorDefinitions)</PreprocessorDefinitions></ClCompile></ItemDefinitionGroup>
+  <Target Name="WriteSpirvSettings" Condition="'@(Spirv)'!=''">
+    <WriteLinesToFile File="$(IntDir)spirv-settings.txt" Lines="UseSmolv=$(UseSmolv)" Overwrite="true" WriteOnlyWhenDifferent="true" />
+    <ItemGroup><FileWrites Include="$(IntDir)spirv-settings.txt" /></ItemGroup>
+  </Target>
+  <Target Name="CompileSpirv" BeforeTargets="ClCompile" DependsOnTargets="WriteSpirvSettings" Condition="'@(Spirv)'!=''" Inputs="%(Spirv.FullPath);%(Spirv.AdditionalInputs);$(IntDir)spirv-settings.txt;$(VulkanCommonDir)EmbedSpirv.ps1;$(VulkanCommonDir)Shaders.targets;$(MSBuildProjectFullPath);$(VulkanCommonDir)Smolv.h;$(VulkanCommonDir)SmolvOps.h;$(VulkanCommonDir)..\..\Tools\smol-v\Build.ps1;$(VulkanCommonDir)..\..\Tools\smol-v\Encode.cpp;$(VulkanCommonDir)..\..\Tools\smol-v\smolv.cpp;$(VulkanCommonDir)..\..\Tools\smol-v\smolv.h" Outputs="$(IntDir)%(Spirv.Filename).spirv.h">
+    <Exec Command="powershell.exe -NoProfile -ExecutionPolicy Bypass -File &quot;$(VulkanCommonDir)EmbedSpirv.ps1&quot; -InputPath &quot;%(Spirv.FullPath)&quot; -OutputHeader &quot;$(IntDir)%(Spirv.Filename).spirv.h&quot; -EntryPoint %(Spirv.EntryPoint) -Stage %(Spirv.Stage) -UseSmolv $(UseSmolv)" />
+    <ItemGroup><FileWrites Include="$(IntDir)%(Spirv.Filename).spirv.h;$(IntDir)%(Spirv.Filename).spirv.h.hlsl;$(IntDir)%(Spirv.Filename).spirv.h.spv;$(IntDir)%(Spirv.Filename).spirv.h.unstripped.spv;$(IntDir)%(Spirv.Filename).spirv.h.smolv" /></ItemGroup>
+  </Target>
+  <Target Name="CopySmolvLicense" AfterTargets="Build" Condition="'$(UseSmolv)'=='1'">
+    <Copy SourceFiles="$(VulkanCommonDir)..\..\Tools\smol-v\license.txt" DestinationFiles="$(OutDir)license-smolv.txt" SkipUnchangedFiles="true" />
+  </Target>
+</Project>

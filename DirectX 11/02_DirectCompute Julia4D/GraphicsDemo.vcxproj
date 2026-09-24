@@ -13,9 +13,9 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
-    <PlatformToolset Condition="'$(PlatformToolset)'==''">v142</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
-    <DemoLibraries>d3d11.lib</DemoLibraries>
+    <DemoLibraries>d3d11.lib;d3dcompiler.lib</DemoLibraries>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <Import Project="..\..\Support\TinyDemo.props" />
@@ -27,4 +27,5 @@
     <FxCompile Include="qjulia4D.hlsl"><EntryPointName>CS_QJulia4D</EntryPointName><ShaderType>Compute</ShaderType></FxCompile>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <Import Project="..\..\Support\EmbeddedShaders.targets" />
 </Project>

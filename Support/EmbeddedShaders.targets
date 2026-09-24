@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <EmbeddedShaderSupportDir>$(MSBuildThisFileDirectory)</EmbeddedShaderSupportDir>
+  </PropertyGroup>
+  <!-- TargetPlatformVersion resolves the project's "10.0" SDK selector to
+       an installed version. WindowsTargetPlatformVersion can remain "10.0". -->
+  <ItemDefinitionGroup>
+    <FxCompile>
+      <EmbeddedRootSignature10>0</EmbeddedRootSignature10>
+      <EmbeddedOptimizationLevel>3</EmbeddedOptimizationLevel>
+    </FxCompile>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClInclude Include="$(EmbeddedShaderSupportDir)TinyShader.h" />
+    <None Include="$(EmbeddedShaderSupportDir)EmbedShader.ps1" />
+    <None Include="$(EmbeddedShaderSupportDir)EmbeddedShaders.targets" />
+  </ItemGroup>
+  <Target Name="EmbedShaderSources" BeforeTargets="ClCompile" DependsOnTargets="FxCompile"
+          Inputs="%(FxCompile.FullPath);%(FxCompile.EmbeddedAdditionalInputs);$(IntDir)%(FxCompile.Filename).cso;$(EmbeddedShaderSupportDir)EmbedShader.ps1;$(EmbeddedShaderSupportDir)EmbeddedShaders.targets;$(MSBuildProjectFullPath)"
+          Outputs="$(IntDir)%(FxCompile.Filename).source.h">
+    <Exec Command="powershell.exe -NoProfile -ExecutionPolicy Bypass -File &quot;$(EmbeddedShaderSupportDir)EmbedShader.ps1&quot; -InputPath &quot;%(FxCompile.FullPath)&quot; -OutputHeader &quot;$(IntDir)%(FxCompile.Filename).source.h&quot; -EntryPoint &quot;%(FxCompile.EntryPointName)&quot; -ShaderType &quot;%(FxCompile.ShaderType)&quot; -RootSignature10 %(FxCompile.EmbeddedRootSignature10) -OptimizationLevel %(FxCompile.EmbeddedOptimizationLevel) -AdditionalEntryPoints &quot;%(FxCompile.EmbeddedAdditionalEntryPoints)&quot; -FxcPath &quot;$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x86\fxc.exe&quot;" />
+    <ItemGroup>
+      <FileWrites Include="$(IntDir)%(FxCompile.Filename).source.h;$(IntDir)%(FxCompile.Filename).preprocessed.hlsl;$(IntDir)%(FxCompile.Filename).compact.hlsl;$(IntDir)%(FxCompile.Filename).reference.cso;$(IntDir)%(FxCompile.Filename).compact.cso;$(IntDir)%(FxCompile.Filename).*.reference.cso;$(IntDir)%(FxCompile.Filename).*.compact.cso" />
+    </ItemGroup>
+  </Target>
+</Project>

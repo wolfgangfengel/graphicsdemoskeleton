@@ -1,0 +1,27 @@
+[
+  {
+    "route": 0,
+    "dx_identical": true,
+    "vulkan_mean_abs_difference": 1.2141533745659723
+  },
+  {
+    "route": 1,
+    "dx_identical": true,
+    "vulkan_mean_abs_difference": 1.1092640516493055
+  },
+  {
+    "route": 2,
+    "dx_identical": true,
+    "vulkan_mean_abs_difference": 2.308610297309028
+  },
+  {
+    "route": 3,
+    "dx_identical": true,
+    "vulkan_mean_abs_difference": 0.6671462673611112
+  },
+  {
+    "route": 4,
+    "dx_identical": true,
+    "vulkan_mean_abs_difference": 0.7738294813368055
+  }
+]

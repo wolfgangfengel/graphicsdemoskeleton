@@ -18,7 +18,7 @@
 DEFINE_GUIDW(IID_ID3D11Texture2D,0x6f15aaf2,0xd208,0x4e89,0x9a,0xb4,0x48,0x95,0x35,0xd3,0x4f,0x9c);
 
 #include <d3d11.h>
-#include <d3dcompiler.h>
+#include "../../Support/TinyShader.h"
 
 // define the size of the window
 #define THREADSX 16			// number of threads in the thread group used in the compute shader
@@ -36,8 +36,8 @@ DEFINE_GUIDW(IID_ID3D11Texture2D,0x6f15aaf2,0xd208,0x4e89,0x9a,0xb4,0x48,0x95,0x
 // allows to remove some system calls to reduce size
 #define WELLBEHAVIOUR
 
-#include "qjulia4D.sh"
-#include "ColorFilters.sh"
+#include "qjulia4D.source.h"
+#include "ColorFilters.source.h"
 
 //
 // Random number generator
@@ -312,19 +312,13 @@ __declspec( naked )  void __cdecl winmain()
 	ID3D11ComputeShader *pCompiledComputeShader;
 	ID3D11ComputeShader *pCompiledPostFXComputeShader;
 
-#if defined(_DEBUG)
-	hr =
-#endif
-		pd3dDevice->lpVtbl->CreateComputeShader(pd3dDevice, g_CS_QJulia4D, sizeof(g_CS_QJulia4D), NULL, &pCompiledComputeShader);
-#if defined(_DEBUG)
-	hr =
-#endif
-		pd3dDevice->lpVtbl->CreateComputeShader(pd3dDevice, g_PostFX, sizeof(g_PostFX), NULL, &pCompiledPostFXComputeShader);
-
-#if defined(_DEBUG)
-	if (hr != S_OK)
-		MessageBoxA(NULL, "CreateComputerShader() failed", "Error", MB_OK | MB_ICONERROR);
-#endif
+	ID3DBlob *juliaCode = tinyCompile(CS_QJulia4D, "cs_5_0", 0);
+	ID3DBlob *filterCode = tinyCompile(PostFX, "cs_5_0", 0);
+	HRESULT shaderResult = pd3dDevice->lpVtbl->CreateComputeShader(pd3dDevice, juliaCode->lpVtbl->GetBufferPointer(juliaCode), juliaCode->lpVtbl->GetBufferSize(juliaCode), NULL, &pCompiledComputeShader);
+	if (FAILED(shaderResult)) ExitProcess((UINT)shaderResult);
+	shaderResult = pd3dDevice->lpVtbl->CreateComputeShader(pd3dDevice, filterCode->lpVtbl->GetBufferPointer(filterCode), filterCode->lpVtbl->GetBufferSize(filterCode), NULL, &pCompiledPostFXComputeShader);
+	if (FAILED(shaderResult)) ExitProcess((UINT)shaderResult);
+	juliaCode->lpVtbl->Release(juliaCode); filterCode->lpVtbl->Release(filterCode);
 
 	// setup timer 
 	StartTime = GetTickCount();

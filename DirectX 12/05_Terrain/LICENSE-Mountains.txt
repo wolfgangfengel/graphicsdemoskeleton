@@ -1,0 +1,60 @@
+Mountains
+=========
+
+Original shader: Mountains, by David Hoskins, 2013
+Author: https://www.shadertoy.com/user/Dave_Hoskins
+Source: https://www.shadertoy.com/view/4slGD4
+Original renderer video: https://www.youtube.com/watch?v=qzkBnCBpQAM
+Source retrieved on 2026-09-15.
+
+The source identifies its license as Creative Commons
+Attribution-NonCommercial-ShareAlike 3.0 Unported (CC BY-NC-SA 3.0).
+The HLSL adaptation in Terrain.hlsl, its compact source embedded in this
+demo, and the compiled shader are provided under that same license.
+
+License: https://creativecommons.org/licenses/by-nc-sa/3.0/
+Full legal terms: https://creativecommons.org/licenses/by-nc-sa/3.0/legalcode
+
+Retain this attribution, identify modifications, and include the license URI
+when sharing the source or executable. Noncommercial use only; adaptations
+must be distributed under the same license. This summary does not replace
+the linked legal terms. No endorsement by the original author is implied.
+
+Original acknowledgments retained from the shader:
+- Inigo Quilez for noise functions.
+- Croqueteer for optional stereo code (not enabled in this port).
+
+Changes for graphicsdemoskeleton, 2026:
+- GLSL translated to HLSL shader model 5.0, executed as a DirectX 11 compute
+  shader compiled at startup from embedded HLSL, with a custom Win32 entry point.
+- Source compaction changes formatting and identifiers only; the build
+  verifies identical stripped FXC bytecode before embedding the source.
+- The GLSL matrix's column ordering is made explicit in HLSL. The descending
+  tree-line smoothstep is expressed as one minus an ascending smoothstep.
+- Repeated terrain/normal evaluations use rolled loops to limit bytecode.
+- Each noise function shares one hash evaluator across its four corners.
+  Ray marching and binary refinement share one terrain evaluator while
+  retaining the original sample order and iteration limits.
+- Terrain height queries share one noise evaluator across amplitude,
+  coarse octaves, broad relief, tree-line noise, trees, and finer octaves.
+  Query modes retain the original operation order and tree-state updates.
+- Fractional hashes use precise arithmetic; final colors are clamped to the
+  display range, and out-of-image compute threads return immediately.
+- The external pebble texture used only for a water-glint mask is replaced
+  by procedural noise. No image or audio assets from Shadertoy are included.
+- The default monoscopic view, horizontal camera path, and mouse-X time
+  shift are retained. The terrain-following altitude is replaced by a fixed
+  cruise altitude for the selected route and a shallow fixed downward pitch.
+  Travel is 25% faster, with a lower cruise floor and terrain-clearance margin.
+  The flight starts earlier along the path to retain the previous endpoint.
+  The route is surveyed once per compute thread group. The native application
+  runs for 30 seconds and exits on Escape or window close.
+
+Additional DirectX 12 port, 2026:
+- The DX12 wrapper includes the existing HLSL unchanged, adds root signature
+  1.0 with four root constants and a UAV descriptor table, and dispatches the
+  same terrain renderer. Camera, materials, quality, and input behavior remain.
+
+This notice applies to the adapted Mountains shader and its embedded form.
+Other demos and independent host/build code retain their existing terms.
+Distribute this file alongside GraphicsDemo.exe and Intro.exe.

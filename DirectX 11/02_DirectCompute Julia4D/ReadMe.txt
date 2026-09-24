@@ -9,11 +9,16 @@ Run BuildSmall.bat for build\Release\Intro.exe.
 See the root README.md for the shared build and verification commands.
 
 Size with VS 2019/MSVC 14.29.30133, SDK 10.0.22621.0, and Crinkler 3.0b:
-- Previous packed EXE: 2,631 bytes.
-- Default BuildSmall.bat: 2,095 bytes.
-- Extended compression: 2,089 bytes, saving 542 bytes (20.6%).
-  BuildSmall.bat -CompressionMode VERYSLOW -OrderTries 25000 -HashTries 1000
-- Uncompressed Release EXE: 10,752 bytes, previously 19,456 bytes.
+- Default BuildSmall.bat with embedded HLSL: 2,067 bytes.
+- The previous bytecode build was 2,095 bytes with the same settings;
+  its extended compression result was 2,089 bytes.
+- Uncompressed Release EXE: 6,656 bytes, previously 10,752 bytes.
+
+Support/EmbeddedShaders.targets automatically generates compact source from
+qjulia4D.hlsl for Visual Studio and batch builds. The EXE embeds 2,453 bytes of
+HLSL and compiles it once at startup through Windows' D3DCompiler_47.dll.
+No external shader file is required. The shader blob is released after creating
+the compute shader, and playback timing starts after initialization.
 
 The demo still renders the animated quaternion Julia set at 1280x720 for about
 30 seconds, with self-shadowing, changing fractal parameters and colors, a
@@ -32,8 +37,9 @@ Correctness changes:
 
 Size changes:
 - The normal-estimation loop is retained with [loop], rather than expanded
-  ten times. This keeps all ten iterations and reduces embedded shader code
-  from 14,756 to 6,576 bytes, including the lighting correction.
+  ten times. This keeps all ten iterations and reduces compiled shader code
+  from 14,756 to 6,576 bytes, including the lighting correction. The EXE now
+  stores the compact source instead of this bytecode.
 - One animation phase replaces duplicate mu/color update bookkeeping.
 - Constant matrix, viewport, detail, zoom, and shadow fields are initialized
   once on the CPU. Shader and constant-buffer bindings are also set once.
@@ -42,12 +48,18 @@ Size changes:
   Debug retains the validation layer and explicit COM resource cleanup.
 
 Both configurations retain the custom naked x86 winmain and no CRT imports.
-Only d3d11.dll, kernel32.dll, and user32.dll are imported by the normal builds.
+Only d3d11.dll, d3dcompiler_47.dll, kernel32.dll, and user32.dll are imported
+by the normal builds.
 Crinkler's loader also supplies its own loader/error-reporting code. The usual
 16-bit float truncation remains enabled, so packed animation timing can differ
 slightly from the uncompressed build.
 
 Validation:
+- Source compaction and runtime compilation produce exactly the previous
+  stripped bytecode. Six frames through 29,900 ms matched the previous renderer
+  pixel for pixel, including the animation transition after 20 seconds, with
+  no D3D11 warnings or errors. Debug, Release, and packed source builds each
+  completed their full timed run; closing the window also exited cleanly.
 - Six representative fractals matched the lighting-corrected, unrolled shader
   in every display-clamped RGBA channel, with no nonfinite output values.
 - GPU timestamps on the test machine averaged 0.494 ms per dispatch versus

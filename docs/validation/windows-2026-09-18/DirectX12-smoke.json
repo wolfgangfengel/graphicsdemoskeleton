@@ -1,0 +1,26 @@
+[
+  {
+    "Api": "DirectX 12",
+    "Mode": "Debug",
+    "Seconds": 3.12,
+    "ExitCode": 0,
+    "MinimizeRestore": false,
+    "Sha256": "0BEE1AC3778FEE6DE47CF10DAC83D3BC9707E377CCB0CE9D8875CB4DF1CCB953"
+  },
+  {
+    "Api": "DirectX 12",
+    "Mode": "Release",
+    "Seconds": 6.22,
+    "ExitCode": 0,
+    "MinimizeRestore": false,
+    "Sha256": "F1706C8833614C39488D13FAF5E97A17318225ECADEDB5373A121BF60B63E8C5"
+  },
+  {
+    "Api": "DirectX 12",
+    "Mode": "Packed",
+    "Seconds": 35.11,
+    "ExitCode": 0,
+    "MinimizeRestore": true,
+    "Sha256": "7F584E9CC451892FF707647AA3BC9C3AAD5AE90AE670424255457A458E1B6A9D"
+  }
+]

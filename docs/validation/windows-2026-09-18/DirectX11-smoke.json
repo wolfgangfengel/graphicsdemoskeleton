@@ -1,0 +1,26 @@
+[
+  {
+    "Api": "DirectX 11",
+    "Mode": "Debug",
+    "Seconds": 3.04,
+    "ExitCode": 0,
+    "MinimizeRestore": false,
+    "Sha256": "17446792E19E3F6C6A214CCEB2CB7FC10D1DBA9DC1A8BA5608B4801BAE1C79A4"
+  },
+  {
+    "Api": "DirectX 11",
+    "Mode": "Release",
+    "Seconds": 3.08,
+    "ExitCode": 0,
+    "MinimizeRestore": false,
+    "Sha256": "D5692E3C5347D785CB71089CA39C4F66A628921ACE61954C197386EBC7B8E1F8"
+  },
+  {
+    "Api": "DirectX 11",
+    "Mode": "Packed",
+    "Seconds": 35.08,
+    "ExitCode": 0,
+    "MinimizeRestore": true,
+    "Sha256": "12EEB93E1C41D8EF9631D80342788BC3D699D27DA74B2D8F77C175BB0861E832"
+  }
+]

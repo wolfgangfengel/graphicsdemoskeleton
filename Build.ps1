@@ -71,7 +71,7 @@ if ($Project) {
     if (Test-Path -LiteralPath $projectPath -PathType Container) { $projectPath = Join-Path $projectPath 'GraphicsDemo.vcxproj' }
     $projects = @(Get-Item -LiteralPath $projectPath)
 } else {
-    $projects = @(Get-ChildItem -LiteralPath (Join-Path $repoRoot 'DirectX 11'), (Join-Path $repoRoot 'DirectX 12') -Recurse -Filter GraphicsDemo.vcxproj | Where-Object { $_.FullName -notmatch '(?i)[\\/]build[\\/]|[\\/]\.vs[\\/]' } | Sort-Object FullName)
+    $projects = @(Get-ChildItem -LiteralPath (Join-Path $repoRoot 'DirectX 11'), (Join-Path $repoRoot 'DirectX 12'), (Join-Path $repoRoot 'Vulkan') -Recurse -Filter GraphicsDemo.vcxproj | Where-Object { $_.FullName -notmatch '(?i)[\\/]build[\\/]|[\\/]\.vs[\\/]' } | Sort-Object FullName)
 }
 $configurations = if ($Configuration -eq 'All') { @('Debug', 'Release') } else { @($Configuration) }
 $results = @()
@@ -80,19 +80,29 @@ foreach ($demo in $projects) {
     [xml]$demoXml = Get-Content -LiteralPath $demo.FullName
     $floatProperty = $demoXml.SelectSingleNode('//*[local-name()="CrinklerFloatBits"]')
     $packedFloatBits = if ($FloatBits) { $FloatBits } elseif ($floatProperty) { [int]$floatProperty.InnerText } else { 16 }
+    $modeProperty = $demoXml.SelectSingleNode('//*[local-name()="CrinklerCompressionMode"]')
+    $packedMode = if ($PSBoundParameters.ContainsKey('CompressionMode') -or -not $modeProperty) { $CompressionMode } else { $modeProperty.InnerText }
+    if ($packedMode -notin @('INSTANT','FAST','SLOW','VERYSLOW')) { throw "Invalid project compression mode: $packedMode" }
     foreach ($config in $configurations) {
         $label = $demo.DirectoryName.Substring($repoRoot.Length + 1)
         $outDir = Join-Path $demo.DirectoryName "build\$config"
         New-Item -ItemType Directory -Force -Path $outDir | Out-Null
-        $record = [ordered]@{ Demo=$label; Configuration=$config; Toolset=$Toolset; SDK=$SdkVersion; Built=$false; ExeBytes=$null; PackedBytes=$null; Crinkler=$crinkler; CompressionMode=$CompressionMode; FloatBits=$packedFloatBits; Error=$null }
+        $record = [ordered]@{ Demo=$label; Configuration=$config; Toolset=$Toolset; SDK=$SdkVersion; Built=$false; ExeBytes=$null; PackedBytes=$null; Crinkler=$crinkler; CompressionMode=$packedMode; FloatBits=$packedFloatBits; Error=$null }
         try {
             Write-Host "Building $label ($config, Win32, $Toolset, SDK $SdkVersion)"
             Invoke-BuildTool $msbuild @($demo.FullName, '/t:Rebuild', "/p:Configuration=$config", '/p:Platform=Win32', "/p:PlatformToolset=$Toolset", "/p:WindowsTargetPlatformVersion=$SdkVersion", '/nologo', '/v:minimal') $demo.DirectoryName (Join-Path $outDir 'build.log')
             $record.Built = $true
             $record.ExeBytes = (Get-Item -LiteralPath (Join-Path $outDir 'GraphicsDemo.exe')).Length
             if ($Compress -and $config -eq 'Release') {
-                $libraries = if ($label.StartsWith('DirectX 12')) { @('d3d12.lib', 'dxgi.lib') } else { @('d3d11.lib') }
-                $packArguments = @('/OUT:Intro.exe', '/SUBSYSTEM:WINDOWS', '/ENTRY:winmain', '/NODEFAULTLIB', "/COMPMODE:$CompressionMode", "/ORDERTRIES:$OrderTries", "/HASHTRIES:$HashTries", '/HASHSIZE:500', "/TRUNCATEFLOATS:$packedFloatBits", '/PRINT:IMPORTS', '/REPORT:report.html', ('/LIBPATH:' + (Join-Path $sdkRoot "Lib\$SdkVersion\um\x86")), 'kernel32.lib', 'user32.lib') + $libraries + @('obj\Window.obj')
+                $libraryProperty = $demoXml.SelectSingleNode('//*[local-name()="DemoLibraries"]')
+                $libraries = if ($libraryProperty) { @($libraryProperty.InnerText.Split(';') | ForEach-Object { $_.Trim() } | Where-Object { $_ }) } elseif ($label.StartsWith('DirectX 12')) { @('d3d12.lib', 'dxgi.lib') } else { @('d3d11.lib') }
+                $packArguments = @('/OUT:Intro.exe', '/SUBSYSTEM:WINDOWS', '/ENTRY:winmain', '/NODEFAULTLIB', "/COMPMODE:$packedMode", "/ORDERTRIES:$OrderTries", "/HASHTRIES:$HashTries", '/HASHSIZE:500', "/TRUNCATEFLOATS:$packedFloatBits", '/PRINT:IMPORTS', '/REPORT:report.html', ('/LIBPATH:' + (Join-Path $sdkRoot "Lib\$SdkVersion\um\x86")), 'kernel32.lib', 'user32.lib') + $libraries + @('obj\Window.obj')
+                $libraryDirectories = $demoXml.SelectSingleNode('//*[local-name()="DemoLibraryDirectories"]')
+                if ($libraryDirectories) {
+                    foreach ($directory in $libraryDirectories.InnerText.Split(';') | Where-Object { $_.Trim() }) {
+                        $packArguments += '/LIBPATH:' + [IO.Path]::GetFullPath((Join-Path $demo.DirectoryName $directory.Trim()))
+                    }
+                }
                 Invoke-BuildTool $crinkler $packArguments $outDir (Join-Path $outDir 'Compression.log')
                 $record.PackedBytes = (Get-Item -LiteralPath (Join-Path $outDir 'Intro.exe')).Length
                 Write-Host "  Packed: $($record.PackedBytes) bytes"

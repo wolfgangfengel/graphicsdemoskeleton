@@ -1,0 +1,26 @@
+[
+  {
+    "Api": "Vulkan",
+    "Mode": "Debug",
+    "Seconds": 3.09,
+    "ExitCode": 0,
+    "MinimizeRestore": false,
+    "Sha256": "FB9539D37468C362E9241F4B3FFFD465252561575E5B941FCD607DF45A939CC2"
+  },
+  {
+    "Api": "Vulkan",
+    "Mode": "Release",
+    "Seconds": 3.11,
+    "ExitCode": 0,
+    "MinimizeRestore": false,
+    "Sha256": "8C7233587F6BEF8F36AA18277F29463CDC60136C1C51205421140F560D026522"
+  },
+  {
+    "Api": "Vulkan",
+    "Mode": "Packed",
+    "Seconds": 35.14,
+    "ExitCode": 0,
+    "MinimizeRestore": true,
+    "Sha256": "D058593B1E062051D7AE65322C0CB37C1572EB4B32CBB50B7C3C81F3DCF89070"
+  }
+]
