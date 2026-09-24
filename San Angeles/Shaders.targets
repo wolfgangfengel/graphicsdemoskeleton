@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <SanAngelesDir>$(MSBuildThisFileDirectory)</SanAngelesDir>
+  </PropertyGroup>
+  <ItemGroup>
+    <ClInclude Include="$(SanAngelesDir)Shaders.h" />
+    <None Include="$(SanAngelesDir)EmbedShaders.ps1" />
+    <None Include="$(SanAngelesDir)Shaders.targets" />
+  </ItemGroup>
+  <Target Name="EmbedSanAngelesSource" BeforeTargets="ClCompile" DependsOnTargets="FxCompile"
+          Inputs="$(SanAngelesDir)vertex.hlsl;$(SanAngelesDir)pixel.hlsl;$(SanAngelesDir)EmbedShaders.ps1;$(SanAngelesDir)Shaders.targets;$(MSBuildProjectFullPath)"
+          Outputs="$(IntDir)ShaderSource.h">
+    <Exec Command="powershell.exe -NoProfile -ExecutionPolicy Bypass -File &quot;$(SanAngelesDir)EmbedShaders.ps1&quot; -OutputHeader &quot;$(IntDir)ShaderSource.h&quot; -FxcPath &quot;$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x86\fxc.exe&quot; $(SanAngelesShaderOptions)" />
+    <ItemGroup>
+      <FileWrites Include="$(IntDir)ShaderSource.h;$(IntDir)vertex.preprocessed.hlsl;$(IntDir)pixel.preprocessed.hlsl;$(IntDir)Shaders.compact.hlsl;$(IntDir)vertex.reference.cso;$(IntDir)pixel.reference.cso;$(IntDir)vertex.compact.cso;$(IntDir)pixel.compact.cso" />
+    </ItemGroup>
+  </Target>
+  <Target Name="CopySanAngelesLicense" AfterTargets="Build">
+    <Copy SourceFiles="$(SanAngelesDir)license-BSD.txt" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" />
+  </Target>
+</Project>

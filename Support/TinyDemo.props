@@ -43,6 +43,7 @@
       <EntryPointSymbol>winmain</EntryPointSymbol>
       <IgnoreAllDefaultLibraries>true</IgnoreAllDefaultLibraries>
       <AdditionalDependencies>$(DemoLibraries);kernel32.lib;user32.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(DemoLibraryDirectories);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <TargetMachine>MachineX86</TargetMachine>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>

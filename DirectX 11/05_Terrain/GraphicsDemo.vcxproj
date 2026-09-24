@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32"><Configuration>Debug</Configuration><Platform>Win32</Platform></ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32"><Configuration>Release</Configuration><Platform>Win32</Platform></ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{0A5A107D-4CAE-44B1-BC97-6EA576221C05}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <RootNamespace>GraphicsDemo</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <!-- Preserve constants used by the procedural noise and camera. -->
+    <CrinklerFloatBits>32</CrinklerFloatBits>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <PlatformToolset>v142</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+    <DemoLibraries>d3d11.lib;d3dcompiler.lib</DemoLibraries>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <Import Project="..\..\Support\TinyDemo.props" />
+  <ItemDefinitionGroup Condition="'$(Configuration)'=='Release'">
+    <ClCompile><CallingConvention>StdCall</CallingConvention></ClCompile>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="Window.c" />
+    <FxCompile Include="Terrain.hlsl"><EntryPointName>CS_Terrain</EntryPointName><ShaderType>Compute</ShaderType></FxCompile>
+    <None Include="Algorithm.txt" />
+    <None Include="ReadMe.txt" />
+    <None Include="BuildSmall.bat" />
+    <None Include="EmbedShader.ps1" />
+    <None Include="LICENSE-Mountains.txt" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <Target Name="EmbedTerrainSource" BeforeTargets="ClCompile" DependsOnTargets="FxCompile"
+          Inputs="$(ProjectDir)Terrain.hlsl;$(ProjectDir)EmbedShader.ps1"
+          Outputs="$(IntDir)TerrainSource.h">
+    <Exec Command="powershell.exe -NoProfile -ExecutionPolicy Bypass -File &quot;$(ProjectDir)EmbedShader.ps1&quot; -InputPath &quot;$(ProjectDir)Terrain.hlsl&quot; -OutputHeader &quot;$(IntDir)TerrainSource.h&quot; -FxcPath &quot;$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x86\fxc.exe&quot;" />
+    <ItemGroup>
+      <FileWrites Include="$(IntDir)TerrainSource.h;$(IntDir)Terrain.compact.hlsl;$(IntDir)Terrain.reference.cso;$(IntDir)Terrain.compact.cso" />
+    </ItemGroup>
+  </Target>
+  <Target Name="CopyMountainsLicense" AfterTargets="Build">
+    <Copy SourceFiles="$(ProjectDir)LICENSE-Mountains.txt" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" />
+  </Target>
+</Project>

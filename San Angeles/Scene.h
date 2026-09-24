@@ -1,4 +1,4 @@
-/* San Angeles Observation - shared DirectX 11 and DirectX 12 scene.
+/* San Angeles Observation - shared DirectX 11, DirectX 12 and Vulkan scene.
  * Geometry and camera tracks derived from Jetro Lauha's 2004-2005 demo.c.
  * Copyright (c) 2004-2005 Jetro Lauha. See license-BSD.txt.
  */

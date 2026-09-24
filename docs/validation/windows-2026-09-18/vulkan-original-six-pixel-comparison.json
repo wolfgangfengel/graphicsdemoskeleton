@@ -1,0 +1,317 @@
+[
+  {
+    "demo": "vk-triangle",
+    "frame": 0,
+    "mean": 0.0,
+    "maximum": 0,
+    "percent_over_one": 0.0
+  },
+  {
+    "demo": "vk-triangle",
+    "frame": 1,
+    "mean": 0.0,
+    "maximum": 0,
+    "percent_over_one": 0.0
+  },
+  {
+    "demo": "vk-triangle",
+    "frame": 2,
+    "mean": 0.0,
+    "maximum": 0,
+    "percent_over_one": 0.0
+  },
+  {
+    "demo": "vk-triangle",
+    "frame": 3,
+    "mean": 5.208333333333334e-07,
+    "maximum": 1,
+    "percent_over_one": 0.0
+  },
+  {
+    "demo": "vk-triangle",
+    "frame": 4,
+    "mean": 0.0,
+    "maximum": 0,
+    "percent_over_one": 0.0
+  },
+  {
+    "demo": "vk-triangle",
+    "frame": 5,
+    "mean": 0.0,
+    "maximum": 0,
+    "percent_over_one": 0.0
+  },
+  {
+    "demo": "vk-julia",
+    "frame": 0,
+    "mean": 0.0010910373263888888,
+    "maximum": 11,
+    "percent_over_one": 0.0002712673611111111
+  },
+  {
+    "demo": "vk-julia",
+    "frame": 1,
+    "mean": 0.000859375,
+    "maximum": 5,
+    "percent_over_one": 8.138020833333334e-05
+  },
+  {
+    "demo": "vk-julia",
+    "frame": 2,
+    "mean": 0.0009920247395833334,
+    "maximum": 1,
+    "percent_over_one": 0.0
+  },
+  {
+    "demo": "vk-julia",
+    "frame": 3,
+    "mean": 0.0010910373263888888,
+    "maximum": 8,
+    "percent_over_one": 0.00013563368055555556
+  },
+  {
+    "demo": "vk-julia",
+    "frame": 4,
+    "mean": 0.0013774956597222222,
+    "maximum": 10,
+    "percent_over_one": 0.00016276041666666668
+  },
+  {
+    "demo": "vk-julia",
+    "frame": 5,
+    "mean": 0.0013289388020833333,
+    "maximum": 2,
+    "percent_over_one": 2.712673611111111e-05
+  },
+  {
+    "demo": "vk-postfx",
+    "frame": 0,
+    "mean": 0.0016121419270833334,
+    "maximum": 13,
+    "percent_over_one": 0.00029839409722222225
+  },
+  {
+    "demo": "vk-postfx",
+    "frame": 1,
+    "mean": 0.0014176432291666667,
+    "maximum": 8,
+    "percent_over_one": 8.138020833333334e-05
+  },
+  {
+    "demo": "vk-postfx",
+    "frame": 2,
+    "mean": 0.0018663194444444445,
+    "maximum": 1,
+    "percent_over_one": 0.0
+  },
+  {
+    "demo": "vk-postfx",
+    "frame": 3,
+    "mean": 0.001814236111111111,
+    "maximum": 9,
+    "percent_over_one": 0.00013563368055555556
+  },
+  {
+    "demo": "vk-postfx",
+    "frame": 4,
+    "mean": 0.0023689778645833333,
+    "maximum": 26,
+    "percent_over_one": 0.00016276041666666668
+  },
+  {
+    "demo": "vk-postfx",
+    "frame": 5,
+    "mean": 0.00243896484375,
+    "maximum": 67,
+    "percent_over_one": 0.00013563368055555556
+  },
+  {
+    "demo": "vk-city",
+    "frame": 0,
+    "mean": 0.0,
+    "maximum": 0,
+    "percent_over_one": 0.0
+  },
+  {
+    "demo": "vk-city",
+    "frame": 1,
+    "mean": 0.15547119140625,
+    "maximum": 1,
+    "percent_over_one": 0.0
+  },
+  {
+    "demo": "vk-city",
+    "frame": 2,
+    "mean": 0.13187255859375,
+    "maximum": 20,
+    "percent_over_one": 0.00016276041666666668
+  },
+  {
+    "demo": "vk-city",
+    "frame": 3,
+    "mean": 0.17033447265625,
+    "maximum": 150,
+    "percent_over_one": 0.4971245659722222
+  },
+  {
+    "demo": "vk-city",
+    "frame": 4,
+    "mean": 0.1269265407986111,
+    "maximum": 202,
+    "percent_over_one": 0.3734537760416667
+  },
+  {
+    "demo": "vk-city",
+    "frame": 5,
+    "mean": 0.13333550347222223,
+    "maximum": 209,
+    "percent_over_one": 0.48022460937500006
+  },
+  {
+    "demo": "vk-city",
+    "frame": 6,
+    "mean": 0.0,
+    "maximum": 0,
+    "percent_over_one": 0.0
+  },
+  {
+    "demo": "vk-terrain",
+    "frame": 0,
+    "mean": 0.0831491427951389,
+    "maximum": 139,
+    "percent_over_one": 0.5776909722222222
+  },
+  {
+    "demo": "vk-terrain",
+    "frame": 1,
+    "mean": 0.050590277777777776,
+    "maximum": 88,
+    "percent_over_one": 0.3359375
+  },
+  {
+    "demo": "vk-terrain",
+    "frame": 2,
+    "mean": 0.09006483289930556,
+    "maximum": 101,
+    "percent_over_one": 0.790011935763889
+  },
+  {
+    "demo": "vk-terrain",
+    "frame": 3,
+    "mean": 0.5771750217013889,
+    "maximum": 215,
+    "percent_over_one": 9.438585069444445
+  },
+  {
+    "demo": "vk-terrain",
+    "frame": 4,
+    "mean": 0.0002609592013888889,
+    "maximum": 13,
+    "percent_over_one": 0.0005696614583333334
+  },
+  {
+    "demo": "vk-terrain",
+    "frame": 5,
+    "mean": 0.011592068142361111,
+    "maximum": 119,
+    "percent_over_one": 0.03369140625
+  },
+  {
+    "demo": "vk-terrain",
+    "frame": 6,
+    "mean": 0.0001589626736111111,
+    "maximum": 1,
+    "percent_over_one": 0.0
+  },
+  {
+    "demo": "vk-terrain",
+    "frame": 7,
+    "mean": 0.00031358506944444446,
+    "maximum": 1,
+    "percent_over_one": 0.0
+  },
+  {
+    "demo": "vk-terrain",
+    "frame": 8,
+    "mean": 0.0014862738715277779,
+    "maximum": 42,
+    "percent_over_one": 0.004692925347222222
+  },
+  {
+    "demo": "vk-terrain",
+    "frame": 9,
+    "mean": 0.0111865234375,
+    "maximum": 126,
+    "percent_over_one": 0.03369140625
+  },
+  {
+    "demo": "vk-terrain",
+    "frame": 10,
+    "mean": 0.00018256293402777777,
+    "maximum": 6,
+    "percent_over_one": 0.0005154079861111111
+  },
+  {
+    "demo": "vk-terrain",
+    "frame": 11,
+    "mean": 0.00042561848958333335,
+    "maximum": 13,
+    "percent_over_one": 0.0012749565972222222
+  },
+  {
+    "demo": "vk-terrain",
+    "frame": 12,
+    "mean": 0.12524522569444443,
+    "maximum": 181,
+    "percent_over_one": 1.3509114583333335
+  },
+  {
+    "demo": "vk-terrain",
+    "frame": 13,
+    "mean": 0.03204427083333333,
+    "maximum": 142,
+    "percent_over_one": 0.22900390625000003
+  },
+  {
+    "demo": "vk-terrain",
+    "frame": 14,
+    "mean": 0.10179280598958333,
+    "maximum": 151,
+    "percent_over_one": 0.8751356336805556
+  },
+  {
+    "demo": "vk-terrain",
+    "frame": 15,
+    "mean": 0.07811306423611111,
+    "maximum": 147,
+    "percent_over_one": 0.7387152777777778
+  },
+  {
+    "demo": "vk-terrain",
+    "frame": 16,
+    "mean": 0.0036485460069444445,
+    "maximum": 65,
+    "percent_over_one": 0.015326605902777778
+  },
+  {
+    "demo": "vk-terrain",
+    "frame": 17,
+    "mean": 0.026167805989583334,
+    "maximum": 144,
+    "percent_over_one": 0.06377495659722221
+  },
+  {
+    "demo": "vk-terrain",
+    "frame": 18,
+    "mean": 0.10818712022569445,
+    "maximum": 181,
+    "percent_over_one": 0.20206705729166669
+  },
+  {
+    "demo": "vk-terrain",
+    "frame": 19,
+    "mean": 0.0003146701388888889,
+    "maximum": 21,
+    "percent_over_one": 0.0008951822916666666
+  }
+]

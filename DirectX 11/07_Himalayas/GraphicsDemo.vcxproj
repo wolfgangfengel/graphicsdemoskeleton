@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32"><Configuration>Debug</Configuration><Platform>Win32</Platform></ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32"><Configuration>Release</Configuration><Platform>Win32</Platform></ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{EEF183E0-4EE4-4B3F-96DA-0F1450BB5992}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <RootNamespace>GraphicsDemo</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <CrinklerFloatBits>32</CrinklerFloatBits>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <PlatformToolset>v142</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+    <DemoLibraries>d3d11.lib;d3dcompiler.lib</DemoLibraries>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <Import Project="..\..\Support\TinyDemo.props" />
+  <ItemDefinitionGroup Condition="'$(Configuration)'=='Release'">
+    <ClCompile><CallingConvention>StdCall</CallingConvention></ClCompile>
+  </ItemDefinitionGroup>
+  <ItemGroup><ClCompile Include="Window.c" /><None Include="README.md" /><None Include="BuildSmall.bat" /></ItemGroup>
+  
+  
+  
+  
+  
+  <ItemGroup><FxCompile Include="..\..\Himalayas\Bundle.hlsl"><EntryPointName>CS_A</EntryPointName><EmbeddedAdditionalEntryPoints>CS_B;CS_C;CS_D;CS_Image</EmbeddedAdditionalEntryPoints><ShaderType>Compute</ShaderType><OptimizationLevel>1</OptimizationLevel><EmbeddedOptimizationLevel>1</EmbeddedOptimizationLevel><EmbeddedAdditionalInputs>$(ProjectDir)..\..\Himalayas\Bindings.hlsl;$(ProjectDir)..\..\Himalayas\Common.hlsl;$(ProjectDir)..\..\Himalayas\A.hlsl;$(ProjectDir)..\..\Himalayas\B.hlsl;$(ProjectDir)..\..\Himalayas\C.hlsl;$(ProjectDir)..\..\Himalayas\D.hlsl;$(ProjectDir)..\..\Himalayas\Image.hlsl</EmbeddedAdditionalInputs></FxCompile></ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <Import Project="..\..\Support\EmbeddedShaders.targets" />
+  <Target Name="CopyHimalayasLicense" AfterTargets="Build"><Copy SourceFiles="$(ProjectDir)..\..\Himalayas\LICENSE.txt" DestinationFiles="$(OutDir)LICENSE-Himalayas.txt" SkipUnchangedFiles="true" /></Target>
+</Project>

@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32"><Configuration>Debug</Configuration><Platform>Win32</Platform></ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32"><Configuration>Release</Configuration><Platform>Win32</Platform></ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{923DF0C2-DDC8-4BF2-97B1-4D6C031B2F49}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <RootNamespace>GraphicsDemo</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <CrinklerFloatBits>32</CrinklerFloatBits><UseSmolv>0</UseSmolv>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <PlatformToolset>v142</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+    <DemoLibraries>vulkan-1.lib</DemoLibraries><DemoLibraryDirectories>..\..\Tools\Vulkan\lib\x86</DemoLibraryDirectories>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <Import Project="..\..\Support\TinyDemo.props" />
+  <ItemDefinitionGroup Condition="'$(Configuration)'=='Release'">
+    <ClCompile><CallingConvention>StdCall</CallingConvention></ClCompile>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="Window.c" />
+    <None Include="README.md" />
+
+    <None Include="BuildSmall.bat" />
+  </ItemGroup>
+  <ItemGroup>
+    <Spirv Include="..\..\DirectX 11\03_DirectCompute PostFX Color Filters\qjulia4D.hlsl"><EntryPoint>CS_QJulia4D</EntryPoint><Stage>cs</Stage></Spirv>
+    <Spirv Include="..\..\DirectX 11\03_DirectCompute PostFX Color Filters\ColorFilters.hlsl"><EntryPoint>PostFX</EntryPoint><Stage>cs</Stage></Spirv>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <Import Project="..\Common\Shaders.targets" />
+
+</Project>

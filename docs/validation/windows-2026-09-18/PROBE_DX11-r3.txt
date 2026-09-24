@@ -1,0 +1,3 @@
+Non-finite terrain/cloud values: 0
+D3D validation: 0 errors, 0 warnings
+Captured 64 sequential frames

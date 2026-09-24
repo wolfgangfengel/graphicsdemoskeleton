@@ -1,0 +1,26 @@
+Himalayas — Reinder Nijhoff, 2018 (@reindernijhoff)
+Original: https://www.shadertoy.com/view/MdGfzh
+Author's source: https://github.com/reindernijhoff/shadertoy/tree/master/himalayas
+Pinned revision: 2def3ce132b4f5d9590e9eee0c17bd37a011835c
+
+The original shader and these HLSL adaptations are licensed under the
+Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License:
+https://creativecommons.org/licenses/by-nc-sa/4.0/
+Legal terms: https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode
+
+Retain attribution, indicate modifications, use noncommercially, and distribute
+adaptations under the same license. This notice accompanies each executable.
+
+Adaptation for graphicsdemoskeleton (2026): shared HLSL, native DirectX 11,
+DirectX 12 and Vulkan hosts, embedded shaders, explicit resource bindings and
+synchronization, wind-driven clouds, a free-fly camera with world-space cloud
+and fog intersections, and 120 FPS pacing. The original GLSL and its full
+credits are in Original/.
+
+Credits retained from the author:
+- Inigo Quilez: terrain noise, sky, outdoor lighting, fog and reprojection.
+- Dave Hoskins: hash functions.
+- Hazel Quantock (2018): humanoid distance field.
+- mu6k: lens flare.
+- Andrew Schneider and Nathan Vos: cloud-shape research.
+- Sebastien Hillaire: volumetric integration research.

@@ -6,7 +6,8 @@
 #include <windows.h>
 #include <initguid.h>
 #include <d3d11.h>
-#include "qjulia4D.sh"
+#include "../../Support/TinyShader.h"
+#include "qjulia4D.source.h"
 
 #define WINWIDTH 1280
 #define WINHEIGHT 720
@@ -92,6 +93,7 @@ __declspec(naked) void __cdecl winmain(void)
         ID3D11Buffer *constants;
         ID3D11UnorderedAccessView *output;
         ID3D11ComputeShader *shader;
+        ID3DBlob *bytecode;
         DWORD start, elapsed, previous = 0;
         MSG message;
         HWND window = CreateWindowW(L"edit", NULL, WS_POPUP | WS_VISIBLE,
@@ -109,7 +111,9 @@ __declspec(naked) void __cdecl winmain(void)
         ThrowIfFailed(swapChain->lpVtbl->GetBuffer(swapChain, 0, &IID_ID3D11Texture2D, (void **)&texture));
         ThrowIfFailed(device->lpVtbl->CreateBuffer(device, &bufferDesc, NULL, &constants));
         ThrowIfFailed(device->lpVtbl->CreateUnorderedAccessView(device, (ID3D11Resource *)texture, NULL, &output));
-        ThrowIfFailed(device->lpVtbl->CreateComputeShader(device, g_CS_QJulia4D, sizeof(g_CS_QJulia4D), NULL, &shader));
+        bytecode = tinyCompile(CS_QJulia4D, "cs_5_0", 0);
+        ThrowIfFailed(device->lpVtbl->CreateComputeShader(device, bytecode->lpVtbl->GetBufferPointer(bytecode), bytecode->lpVtbl->GetBufferSize(bytecode), NULL, &shader));
+        bytecode->lpVtbl->Release(bytecode);
         context->lpVtbl->CSSetShader(context, shader, NULL, 0);
         context->lpVtbl->CSSetConstantBuffers(context, 0, 1, &constants);
 

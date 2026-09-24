@@ -23,3 +23,11 @@ DirectX 12/02_Triangle/Win32/Debug/Window.obj
 build/
 .vs/
 *.vcxproj.user
+
+# Generated IDE databases and old per-project compression output.
+*.VC.db
+*.VC.opendb
+**/Compression.log
+.DS_Store
+DerivedData/
+xcuserdata/

@@ -1,0 +1,126 @@
+// --- PROCEDURAL NOISE & TERRAIN CORE ---
+float hash(vec3 p) {
+    p = fract(p * vec3(443.8975, 397.2973, 491.1871));
+    p += dot(p.xyz, p.yzx + 19.19);
+    return fract(p.x * p.y * p.z);
+}
+
+float noise(vec3 p) {
+    vec3 i = floor(p);
+    vec3 f = fract(p);
+    vec3 u = f * f * (3.0 - 2.0 * f);
+    return mix(mix(mix(hash(i + vec3(0,0,0)), hash(i + vec3(1,0,0)), u.x),
+                   mix(hash(i + vec3(0,1,0)), hash(i + vec3(1,1,0)), u.x), u.y),
+               mix(mix(hash(i + vec3(0,0,1)), hash(i + vec3(1,0,1)), u.x),
+                   mix(hash(i + vec3(0,1,1)), hash(i + vec3(1,1,1)), u.x), u.y), u.z);
+}
+
+// 5-Octave fBm determines the terrain elevation profile
+float terrainHeight(vec2 p) {
+    vec3 pos = vec3(p.x, 0.0, p.y);
+    float amplitude = 1.2;
+    float frequency = 0.15;
+    float height = 0.0;
+    for(int i = 0; i < 5; i++) {
+        height += amplitude * noise(pos * frequency);
+        frequency *= 2.15;
+        amplitude *= 0.45;
+    }
+    return height;
+}
+
+// Signed Distance Function (SDF) evaluating the scene
+float map(vec3 p) {
+    return p.y - terrainHeight(p.xz);
+}
+
+// Calculates normals purely mathematically via central differences
+vec3 getNormal(vec3 p) {
+    vec2 e = vec2(0.01, 0.0);
+    return normalize(vec3(
+        map(p + e.xyy) - map(p - e.xyy),
+        map(p + e.yxy) - map(p - e.yxy),
+        map(p + e.yyx) - map(p - e.yyx)
+    ));
+}
+
+// --- RENDERING PIPELINE ---
+void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+    // Normalize coordinates (-1 to 1) and account for aspect ratio
+    vec2 uv = (fragCoord - 0.5 * iResolution.xy) / iResolution.y;
+    
+    // Smoothly fly the camera forward over time
+    float time = iTime * 0.5;
+    vec3 ro = vec3(0.0, 2.5, time);                // Ray Origin (Camera Position)
+    vec3 target = vec3(sin(time*0.5), 1.5, time + 5.0); // Looking ahead with a slight pan
+    
+    // Adjust camera height so it doesn't clip into the mountains
+    ro.y += terrainHeight(ro.xz);
+    
+    // Establish Camera Matrix
+    vec3 cw = normalize(target - ro);
+    vec3 cp = vec3(0.0, 1.0, 0.0);
+    vec3 cu = normalize(cross(cw, cp));
+    vec3 cv = normalize(cross(cu, cw));
+    vec3 rd = normalize(uv.x * cu + uv.y * cv + 1.2 * cw); // Ray Direction
+
+    // Raymarching Loop
+    float t = 0.1;
+    float maxDist = 40.0;
+    bool hit = false;
+    vec3 p;
+    
+    for(int i = 0; i < 100; i++) {
+        p = ro + rd * t;
+        float d = map(p);
+        if(d < 0.002) {
+            hit = true;
+            break;
+        }
+        if(t > maxDist) break;
+        t += d * 0.5; // Conservative step size to prevent mountain edge clipping
+    }
+
+    // Shading and Environment
+    vec3 col = vec3(0.0);
+    vec3 skyColor = vec3(0.4, 0.55, 0.7);
+    vec3 sunDir = normalize(vec3(1.0, 0.6, 0.8));
+
+    if(hit) {
+        vec3 n = getNormal(p);
+        
+        // Dynamic procedural textures based on terrain features
+        float slope = 1.0 - n.y; // High slope = steep cliff face
+        vec3 rockColor = vec3(0.25, 0.22, 0.2);
+        vec3 grassColor = vec3(0.15, 0.25, 0.1) + 0.05 * noise(p * 5.0);
+        vec3 snowColor = vec3(0.9, 0.9, 0.95);
+        
+        // Blend materials based on height and slope
+        vec3 matColor = mix(grassColor, rockColor, smoothstep(0.15, 0.45, slope));
+        if (p.y > 2.8 && slope < 0.3) {
+            matColor = mix(matColor, snowColor, smoothstep(2.8, 3.5, p.y));
+        }
+        
+        // Lighting
+        float diff = max(dot(n, sunDir), 0.0);
+        float amb = clamp(0.5 + 0.5 * n.y, 0.0, 1.0);
+        
+        col = matColor * (diff * vec3(1.0, 0.9, 0.7) + amb * vec3(0.2, 0.3, 0.4));
+        
+        // Exponential atmospheric fog to hide background geometry cuts
+        float fog = 1.0 - exp(-0.04 * t * t);
+        col = mix(col, skyColor, fog);
+    } else {
+        // Sky gradient and simple procedural sun glare
+        col = skyColor - max(rd.y, 0.0) * 0.3;
+        float sunSpec = max(dot(rd, sunDir), 0.0);
+        col += 0.3 * vec3(1.0, 0.7, 0.4) * pow(sunSpec, 8.0);
+        col += 0.7 * vec3(1.0, 0.9, 0.7) * pow(sunSpec, 120.0);
+    }
+
+    // Subtle vignette & Gamma correction
+    col *= 0.5 + 0.5 * pow(16.0 * uv.x * uv.y * (1.0 - uv.x) * (1.0 - uv.y), 0.25);
+    col = pow(col, vec3(0.4545)); 
+    
+    fragColor = vec4(col, 1.0);
+}

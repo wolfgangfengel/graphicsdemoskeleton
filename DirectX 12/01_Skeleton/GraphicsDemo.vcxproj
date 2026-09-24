@@ -13,7 +13,7 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
-    <PlatformToolset Condition="'$(PlatformToolset)'==''">v142</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
     <DemoLibraries>d3d12.lib;dxgi.lib</DemoLibraries>
   </PropertyGroup>

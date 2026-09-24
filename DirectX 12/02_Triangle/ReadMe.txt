@@ -8,16 +8,21 @@ Run BuildSmall.bat for build\Release\Intro.exe.
 See the root README.md for the shared build and verification commands.
 
 Size with VS 2019/MSVC 14.29.30133, SDK 10.0.22621.0, and Crinkler 3.0b:
-- Default BuildSmall.bat: 1,794 bytes for the world/view/projection triangle.
-- The preceding screen-space rotation was 1,653 bytes.
-- The original, unoptimized static triangle was 2,065 bytes.
-- VERYSLOW with 25,000 order tries and 1,000 hash tries also produced 1,794
-  bytes, so the default settings give the same size with a faster build.
+- Default BuildSmall.bat: 1,832 bytes with embedded HLSL source.
+- The previous world/view/projection triangle with embedded bytecode was
+  1,794 bytes with the same settings. Source embedding adds 38 bytes here;
+  these tiny shaders do not offset the compiler import and startup calls.
+
+Support/EmbeddedShaders.targets generates the compact source automatically.
+The EXE embeds 337 bytes of vertex HLSL and 47 bytes of pixel HLSL, compiled once
+at startup through Windows' D3DCompiler_47.dll. No external shader files are
+required. The playback clock starts after shader and pipeline initialization.
 
 The vertex shader generates the triangle and its RGB corner colors from
 SV_VertexID. This removes the upload buffer, input layout, buffer view, and
-associated setup. FXC embeds the root signature in the shader, removing runtime
-serialization and blob handling. Root-signature version 1.0 is retained.
+associated setup. D3DCompile embeds the root signature in the vertex shader.
+Root-signature version 1.0 is retained through its Flags2 option. Both temporary
+blobs are released after the root signature and pipeline state are created.
 
 Window.c builds the conventional transforms on the CPU:
 - World: rotate the model around its centroid on the Y axis, at two radians
@@ -59,6 +64,11 @@ The 800x600 window, hidden cursor, Escape polling, and approximately 3.3-second
 playback remain. DXGI supplies the current back-buffer index each frame.
 
 Validation for this animation:
+- The compact sources and runtime compiler produce exactly the previous
+  stripped shader bytecode, including root signature 1.0. Six frames at 0,
+  300, 650, 1,200, 2,500, and 3,250 ms matched pixel for pixel with no D3D12
+  validation warnings or errors. Debug, Release, and packed source builds
+  completed full playback, and the separate window-close check passed.
 - The instrumented Release loop completed 377 frames across both buffers,
   including hide/show, with zero D3D12 warnings or errors.
 - Nine GPU readbacks spanning 0 to 3,250 ms matched independently calculated

@@ -7,7 +7,8 @@
 #include <initguid.h>
 #include <d3d12.h>
 #include <dxgi1_4.h>
-#include "qjulia4D.sh"
+#include "../../Support/TinyShader.h"
+#include "qjulia4D.source.h"
 
 #define WINWIDTH 1280
 #define WINHEIGHT 720
@@ -87,7 +88,7 @@ static void UpdateAnimation(UINT delta)
 static void InitializeJulia(void)
 {
     static D3D12_COMPUTE_PIPELINE_STATE_DESC pipeline = {
-        NULL, { g_CS_QJulia4D, sizeof(g_CS_QJulia4D) }, 0, { 0 }, D3D12_PIPELINE_STATE_FLAG_NONE
+        NULL, { 0 }, 0, { 0 }, D3D12_PIPELINE_STATE_FLAG_NONE
     };
     static const D3D12_HEAP_PROPERTIES heap = { D3D12_HEAP_TYPE_DEFAULT, 0, 0, 1, 1 };
     static const D3D12_RESOURCE_DESC texture = {
@@ -99,10 +100,14 @@ static void InitializeJulia(void)
         D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 1, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE, 0
     };
     D3D12_CPU_DESCRIPTOR_HANDLE view;
-    /* FXC embeds root signature 1.0; no runtime serializer or compiler DLL. */
-    ThrowIfFailed(mDevice->lpVtbl->CreateRootSignature(mDevice, 0, g_CS_QJulia4D, sizeof(g_CS_QJulia4D), &IID_ID3D12RootSignature, (void **)&mRootSignature));
+    ID3DBlob *bytecode = tinyCompile(CS_QJulia4D, "cs_5_0", D3DCOMPILE_FLAGS2_FORCE_ROOT_SIGNATURE_1_0);
+    /* Preserve root signature 1.0 in the runtime-compiled shader. */
+    pipeline.CS.pShaderBytecode = bytecode->lpVtbl->GetBufferPointer(bytecode);
+    pipeline.CS.BytecodeLength = bytecode->lpVtbl->GetBufferSize(bytecode);
+    ThrowIfFailed(mDevice->lpVtbl->CreateRootSignature(mDevice, 0, pipeline.CS.pShaderBytecode, pipeline.CS.BytecodeLength, &IID_ID3D12RootSignature, (void **)&mRootSignature));
     pipeline.pRootSignature = mRootSignature;
     ThrowIfFailed(mDevice->lpVtbl->CreateComputePipelineState(mDevice, &pipeline, &IID_ID3D12PipelineState, (void **)&mPSO));
+    bytecode->lpVtbl->Release(bytecode);
     ThrowIfFailed(mDevice->lpVtbl->CreateCommittedResource(mDevice, &heap, 0, &texture, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, NULL, &IID_ID3D12Resource, (void **)&mOutput));
     ThrowIfFailed(mDevice->lpVtbl->CreateDescriptorHeap(mDevice, &descriptors, &IID_ID3D12DescriptorHeap, (void **)&mDescriptorHeap));
     /* x86 C++ COM returns these structs through a hidden output pointer. */

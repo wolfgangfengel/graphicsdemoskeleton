@@ -8,8 +8,9 @@
 #include <initguid.h>
 #include <d3d12.h>
 #include <dxgi1_4.h>
-#include "vertex.sh"
-#include "pixel.sh"
+#include "../../Support/TinyShader.h"
+#include "vertex.source.h"
+#include "pixel.source.h"
 
 #define WINWIDTH 800
 #define WINHEIGHT 600
@@ -99,7 +100,7 @@ static void InitializeTriangle(void)
 {
     /* Static descriptors compress better than assignments and structure copies. */
     static D3D12_GRAPHICS_PIPELINE_STATE_DESC pipeline = {
-        NULL, { g_VShader, sizeof(g_VShader) }, { g_PShader, sizeof(g_PShader) }, { 0 }, { 0 }, { 0 }, { 0 },
+        NULL, { 0 }, { 0 }, { 0 }, { 0 }, { 0 }, { 0 },
         { FALSE, FALSE, {{ FALSE, FALSE, D3D12_BLEND_ONE, D3D12_BLEND_ZERO, D3D12_BLEND_OP_ADD,
             D3D12_BLEND_ONE, D3D12_BLEND_ZERO, D3D12_BLEND_OP_ADD, D3D12_LOGIC_OP_NOOP, D3D12_COLOR_WRITE_ENABLE_ALL }} },
         UINT_MAX,
@@ -109,11 +110,17 @@ static void InitializeTriangle(void)
         { NULL, 0 }, D3D12_INDEX_BUFFER_STRIP_CUT_VALUE_DISABLED, D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE,
         1, { DXGI_FORMAT_R8G8B8A8_UNORM }, DXGI_FORMAT_UNKNOWN, { 1, 0 }, 0, { 0 }, D3D12_PIPELINE_STATE_FLAG_NONE
     };
-    /* FXC embeds the root signature in the vertex shader. No runtime
-     * serializer, vertex buffer, or input layout is needed with SV_VertexID. */
-    ThrowIfFailed(mDevice->lpVtbl->CreateRootSignature(mDevice, 0, g_VShader, sizeof(g_VShader), &IID_ID3D12RootSignature, (void **)&mRootSignature));
+    ID3DBlob *vertexCode = tinyCompile(VShader, "vs_5_0", D3DCOMPILE_FLAGS2_FORCE_ROOT_SIGNATURE_1_0);
+    ID3DBlob *pixelCode = tinyCompile(PShader, "ps_5_0", 0);
+    /* Runtime compilation preserves the embedded root signature 1.0. */
+    pipeline.VS.pShaderBytecode = vertexCode->lpVtbl->GetBufferPointer(vertexCode);
+    pipeline.VS.BytecodeLength = vertexCode->lpVtbl->GetBufferSize(vertexCode);
+    pipeline.PS.pShaderBytecode = pixelCode->lpVtbl->GetBufferPointer(pixelCode);
+    pipeline.PS.BytecodeLength = pixelCode->lpVtbl->GetBufferSize(pixelCode);
+    ThrowIfFailed(mDevice->lpVtbl->CreateRootSignature(mDevice, 0, pipeline.VS.pShaderBytecode, pipeline.VS.BytecodeLength, &IID_ID3D12RootSignature, (void **)&mRootSignature));
     pipeline.pRootSignature = mRootSignature;
     ThrowIfFailed(mDevice->lpVtbl->CreateGraphicsPipelineState(mDevice, &pipeline, &IID_ID3D12PipelineState, (void **)&mPSO));
+    vertexCode->lpVtbl->Release(vertexCode); pixelCode->lpVtbl->Release(pixelCode);
 }
 static void RecordTriangle(ID3D12Resource *target, D3D12_CPU_DESCRIPTOR_HANDLE view, UINT elapsed)
 {

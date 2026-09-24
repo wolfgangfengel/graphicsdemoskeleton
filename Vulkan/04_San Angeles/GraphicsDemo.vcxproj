@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32"><Configuration>Debug</Configuration><Platform>Win32</Platform></ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32"><Configuration>Release</Configuration><Platform>Win32</Platform></ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{FB8E9FEA-6DAB-41E2-B693-72ACC62F7B49}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <RootNamespace>GraphicsDemo</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <CrinklerFloatBits>32</CrinklerFloatBits><UseSmolv>0</UseSmolv>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <PlatformToolset>v142</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+    <DemoLibraries>vulkan-1.lib</DemoLibraries><DemoLibraryDirectories>..\..\Tools\Vulkan\lib\x86</DemoLibraryDirectories>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <Import Project="..\..\Support\TinyDemo.props" />
+  <ItemDefinitionGroup Condition="'$(Configuration)'=='Release'">
+    <ClCompile><CallingConvention>StdCall</CallingConvention></ClCompile>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="Window.c" />
+    <None Include="README.md" />
+    <None Include="license-BSD.txt" />
+
+    <None Include="BuildSmall.bat" />
+  </ItemGroup>
+  <ItemGroup>
+    <Spirv Include="..\..\San Angeles\vertex.hlsl"><EntryPoint>VShader</EntryPoint><Stage>vs</Stage></Spirv>
+    <Spirv Include="..\..\San Angeles\pixel.hlsl"><EntryPoint>PShader</EntryPoint><Stage>ps</Stage></Spirv>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <Import Project="..\Common\Shaders.targets" />
+
+  <Target Name="CopyDemoLicense" AfterTargets="Build"><Copy SourceFiles="$(ProjectDir)license-BSD.txt" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" /></Target>
+</Project>

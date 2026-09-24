@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations"><ProjectConfiguration Include="Release|x64"><Configuration>Release</Configuration><Platform>x64</Platform></ProjectConfiguration></ItemGroup>
+  <PropertyGroup Label="Globals"><ProjectGuid>{19EF5694-36D1-49CE-A18B-493C9D461517}</ProjectGuid><WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion></PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Label="Configuration"><ConfigurationType>Application</ConfigurationType><PlatformToolset>v142</PlatformToolset></PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <PropertyGroup><OutDir>$(ProjectDir)build\</OutDir><IntDir>$(ProjectDir)build\obj\</IntDir><TargetName>Encode</TargetName><LinkIncremental>false</LinkIncremental></PropertyGroup>
+  <ItemDefinitionGroup><ClCompile><Optimization>MaxSpeed</Optimization><RuntimeLibrary>MultiThreaded</RuntimeLibrary><WarningLevel>Level3</WarningLevel><ExceptionHandling>Sync</ExceptionHandling><PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions></ClCompile><Link><SubSystem>Console</SubSystem></Link></ItemDefinitionGroup>
+  <ItemGroup><ClCompile Include="Encode.cpp"/><ClCompile Include="smolv.cpp"/><ClInclude Include="smolv.h"/><ClInclude Include="..\..\Vulkan\Common\Smolv.h"/></ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+</Project>

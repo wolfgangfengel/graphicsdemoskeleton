@@ -29,12 +29,17 @@ Or, from the repository root:
 
 Packed builds use the shared default compression settings, including
 16-bit float truncation. Crinkler 3.x output requires Windows 10+ and SSE4.2.
-All shader bytecode is embedded: no external shaders or runtime compiler DLL.
+Compact HLSL source is embedded and compiled once at startup through Windows'
+D3DCompiler_47.dll. No external shader files are required. Source generation
+and bytecode verification are integrated through Support/EmbeddedShaders.targets.
+Playback timing starts after initialization.
 
 Implementation
 --------------
 The HLSL matches the corrected compact DX11 shader, with an embedded root
-signature 1.0 added. Its 10-iteration normal-estimation loop remains rolled.
+signature 1.0 added. D3DCompile's Flags2 option preserves that version, and its
+temporary blob is released after creating the root signature and compute PSO.
+Its 10-iteration normal-estimation loop remains rolled.
 The 128-byte constants occupy 32 root DWORDs at b0; a descriptor table binds
 one RGBA8 UAV at u0. No constant-buffer upload allocation is needed.
 
@@ -51,13 +56,21 @@ GPU resources explicitly; Release uses process teardown to keep the EXE small.
 Measured build and verification
 -------------------------------
 VS2019 v142 (MSVC 14.29.30133), Windows SDK 10.0.22621.0, default Crinkler
-3.0b settings: Debug 13,824 bytes, Release 11,264 bytes, Intro.exe 2,607 bytes.
-The embedded Release compute shader, including its root signature, is 6,676
-bytes before compression. Sizes can vary with compiler/SDK versions.
+3.0b settings: Debug 8,704 bytes, Release 8,192 bytes, Intro.exe 2,596 bytes.
+The previous bytecode build was 2,607 bytes with the same compression settings.
+The embedded HLSL, including its root-signature declaration, is 2,537 bytes;
+the previous embedded bytecode was 6,676 bytes. Sizes can vary with toolchain.
 
 Debug, Release, and packed binaries each completed the full 30-second run
 with exit code 0; a separate window-close run exited cleanly. The PE entry
-points match winmain, and imports contain only d3d12, dxgi, kernel32, user32.
+points match winmain, and imports contain only d3d12, dxgi, d3dcompiler_47,
+kernel32, and user32.
+
+Source compaction and runtime compilation matched the previous stripped
+bytecode exactly, including root signature 1.0. Six GPU readbacks through
+29,900 ms matched the previous renderer pixel for pixel, with no D3D12
+validation warnings or errors. The source builds passed full playback in
+Debug, Release, and packed form, plus a separate window-close check.
 
 An instrumented Release run compared 11 GPU readbacks against the actual
 DX11 shader at 1280x720: six fixed quaternion cases and five animation samples

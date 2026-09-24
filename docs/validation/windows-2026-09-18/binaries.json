@@ -1,0 +1,268 @@
+[
+  {
+    "demo": "DirectX 11/01_Skeleton",
+    "file": "GraphicsDemo.exe",
+    "bytes": 3072,
+    "sha256": "fbbe3d8a4e55106a3657724dbf8e9726388d830ab32f15354bd030a0f7864dec",
+    "built_utc": "2026-09-13T13:11:44.060914+00:00"
+  },
+  {
+    "demo": "DirectX 11/01_Skeleton",
+    "file": "Intro.exe",
+    "bytes": 772,
+    "sha256": "0205e7486372482a2bc72c3d750c480e8a60aaf11b6d498dd03462f6105f66c1",
+    "built_utc": "2026-09-13T13:11:45.080914+00:00"
+  },
+  {
+    "demo": "DirectX 11/02_DirectCompute Julia4D",
+    "file": "GraphicsDemo.exe",
+    "bytes": 6656,
+    "sha256": "fd59750a0fca39842db93112d01cba7c4502417edc90aea6994c4216ad70dded",
+    "built_utc": "2026-09-18T03:54:28.493264+00:00"
+  },
+  {
+    "demo": "DirectX 11/02_DirectCompute Julia4D",
+    "file": "Intro.exe",
+    "bytes": 2067,
+    "sha256": "282280d73acc284040d1403faaa747314f990035ab6090c205d7e74cb746306c",
+    "built_utc": "2026-09-18T01:45:27.656369+00:00"
+  },
+  {
+    "demo": "DirectX 11/03_DirectCompute PostFX Color Filters",
+    "file": "GraphicsDemo.exe",
+    "bytes": 8704,
+    "sha256": "a36adcfca8c573d149ea411fcbc8277893768b66c439b34e942fbc3359019f2e",
+    "built_utc": "2026-09-18T03:54:33.093344+00:00"
+  },
+  {
+    "demo": "DirectX 11/03_DirectCompute PostFX Color Filters",
+    "file": "Intro.exe",
+    "bytes": 2749,
+    "sha256": "c8c8662250ea5b9da876623fd311579d1a780b687daf2595996763b129024d1c",
+    "built_utc": "2026-09-18T01:45:39.657482+00:00"
+  },
+  {
+    "demo": "DirectX 11/04_San Angeles",
+    "file": "GraphicsDemo.exe",
+    "bytes": 10240,
+    "sha256": "79e467bbaf8cb1b5e815c10093e745c82aa45ac1edfe8da12f00f899837ce25a",
+    "built_utc": "2026-09-18T03:54:42.877312+00:00"
+  },
+  {
+    "demo": "DirectX 11/04_San Angeles",
+    "file": "Intro.exe",
+    "bytes": 3832,
+    "sha256": "4cd0f4742cfb157f5e4a8d04d7bf7e4bf8f366a73e0783239792bd55b1829ae9",
+    "built_utc": "2026-09-17T23:22:17.337665+00:00"
+  },
+  {
+    "demo": "DirectX 11/05_Terrain",
+    "file": "GraphicsDemo.exe",
+    "bytes": 9728,
+    "sha256": "d812d8487fd53aaa3dfb485330f7f10351382a3b89985f9173b5c6a9233fd76a",
+    "built_utc": "2026-09-17T22:54:39.362853+00:00"
+  },
+  {
+    "demo": "DirectX 11/05_Terrain",
+    "file": "Intro.exe",
+    "bytes": 3147,
+    "sha256": "f92135bce553861c653fda3847656a5e0e9bcc016dc7fe44eb21b99d31b49098",
+    "built_utc": "2026-09-17T22:54:46.711471+00:00"
+  },
+  {
+    "demo": "DirectX 11/07_Himalayas",
+    "file": "GraphicsDemo.exe",
+    "bytes": 22528,
+    "sha256": "d5692e3c5347d785cb71089ca39c4f66a628921ace61954c197386ebc7b8e1f8",
+    "built_utc": "2026-09-18T13:21:13.132387+00:00"
+  },
+  {
+    "demo": "DirectX 11/07_Himalayas",
+    "file": "Intro.exe",
+    "bytes": 6660,
+    "sha256": "12eeb93e1c41d8ef9631d80342788bc3d699d27da74b2d8f77c175bb0861e832",
+    "built_utc": "2026-09-18T13:21:34.993349+00:00"
+  },
+  {
+    "demo": "DirectX 12/01_Skeleton",
+    "file": "GraphicsDemo.exe",
+    "bytes": 4096,
+    "sha256": "24a204535e5137d92842c6250c2725cda3e789c5601530c1aec3413f8059061f",
+    "built_utc": "2026-09-13T13:30:57.837622+00:00"
+  },
+  {
+    "demo": "DirectX 12/01_Skeleton",
+    "file": "Intro.exe",
+    "bytes": 1119,
+    "sha256": "f5da1b32eaf3d519894772170f3d9b665aaf70eacc634d1a5e6332a4f2978782",
+    "built_utc": "2026-09-13T13:30:59.268331+00:00"
+  },
+  {
+    "demo": "DirectX 12/02_Triangle",
+    "file": "GraphicsDemo.exe",
+    "bytes": 6144,
+    "sha256": "3f65f960283234652990686572c440dcfe66f97e9e9e3c6220a0210d468fa0f1",
+    "built_utc": "2026-09-18T03:54:37.257177+00:00"
+  },
+  {
+    "demo": "DirectX 12/02_Triangle",
+    "file": "Intro.exe",
+    "bytes": 1832,
+    "sha256": "ff0bce87c45738ec9bf4c36a4f8aee3c6d4b1a2bb28ae4d760e468c938a20d4d",
+    "built_utc": "2026-09-18T01:45:48.615697+00:00"
+  },
+  {
+    "demo": "DirectX 12/03_DirectCompute Julia4D",
+    "file": "GraphicsDemo.exe",
+    "bytes": 8192,
+    "sha256": "6c564834691b6e56bd1c73246a84b9e2ce8abdf78b93efad8324c1913f182758",
+    "built_utc": "2026-09-18T03:54:40.087275+00:00"
+  },
+  {
+    "demo": "DirectX 12/03_DirectCompute Julia4D",
+    "file": "Intro.exe",
+    "bytes": 2596,
+    "sha256": "e02cfff73ea784b6faf61fe1a41a46b9fd387f5c7d35532f23d96ab4597c62d3",
+    "built_utc": "2026-09-18T01:45:57.140452+00:00"
+  },
+  {
+    "demo": "DirectX 12/04_San Angeles",
+    "file": "GraphicsDemo.exe",
+    "bytes": 11264,
+    "sha256": "d0f88408bc696dfe51eece2fe665edf45865cdb28cbd50468a26ab4fcc62f7e0",
+    "built_utc": "2026-09-18T03:54:45.930074+00:00"
+  },
+  {
+    "demo": "DirectX 12/04_San Angeles",
+    "file": "Intro.exe",
+    "bytes": 4383,
+    "sha256": "5a841af63f50881a9e1e5d7e70b2cbec5daba249a02e17701631ab897dabe769",
+    "built_utc": "2026-09-17T23:21:45.181123+00:00"
+  },
+  {
+    "demo": "DirectX 12/05_Terrain",
+    "file": "GraphicsDemo.exe",
+    "bytes": 11264,
+    "sha256": "0768557a186fbcc145cb575800bc15e5d559e3d5837067fd3d29b099a009b1a3",
+    "built_utc": "2026-09-18T04:24:29.376546+00:00"
+  },
+  {
+    "demo": "DirectX 12/05_Terrain",
+    "file": "Intro.exe",
+    "bytes": 3721,
+    "sha256": "25a417d766fcdc76bfa3a4443eb4f5fab7092d79016c8a0082a34f4c182af411",
+    "built_utc": "2026-09-18T02:33:48.026353+00:00"
+  },
+  {
+    "demo": "DirectX 12/07_Himalayas",
+    "file": "GraphicsDemo.exe",
+    "bytes": 24576,
+    "sha256": "f1706c8833614c39488d13faf5e97a17318225ecadedb5373a121bf60b63e8c5",
+    "built_utc": "2026-09-18T13:21:43.485018+00:00"
+  },
+  {
+    "demo": "DirectX 12/07_Himalayas",
+    "file": "Intro.exe",
+    "bytes": 7404,
+    "sha256": "7f584e9cc451892ff707647aa3bc9c3aad5ae90ae670424255457a458e1b6a9d",
+    "built_utc": "2026-09-18T13:22:30.012358+00:00"
+  },
+  {
+    "demo": "Vulkan/01_Skeleton",
+    "file": "GraphicsDemo.exe",
+    "bytes": 7680,
+    "sha256": "707ac81e0190e960876eb446629104c1aeeabf25b0ed1ee72ddcdcce2d45a46f",
+    "built_utc": "2026-09-18T03:28:02.745470+00:00"
+  },
+  {
+    "demo": "Vulkan/01_Skeleton",
+    "file": "Intro.exe",
+    "bytes": 2049,
+    "sha256": "986e894229f06fc181c48ad86b58d20cccfc57f53903ded135154f0659e77a16",
+    "built_utc": "2026-09-18T03:28:06.797551+00:00"
+  },
+  {
+    "demo": "Vulkan/02_Triangle",
+    "file": "GraphicsDemo.exe",
+    "bytes": 13312,
+    "sha256": "45341eb7d90abc6ccbcf6dc3a49b504d11a08e05b214a223f2dea46cb02c33af",
+    "built_utc": "2026-09-18T03:26:21.808479+00:00"
+  },
+  {
+    "demo": "Vulkan/02_Triangle",
+    "file": "Intro.exe",
+    "bytes": 4000,
+    "sha256": "b8814dd05726816ee6a757e40cf989e6bcb9821246e711997bdf4c82d36ec812",
+    "built_utc": "2026-09-18T03:26:30.004198+00:00"
+  },
+  {
+    "demo": "Vulkan/03_Compute Julia4D",
+    "file": "GraphicsDemo.exe",
+    "bytes": 20480,
+    "sha256": "ad9fcccf68baab600692879e3361b5b524acd634e8a8b8e6346a7fcb9e55928f",
+    "built_utc": "2026-09-18T03:28:10.684190+00:00"
+  },
+  {
+    "demo": "Vulkan/03_Compute Julia4D",
+    "file": "Intro.exe",
+    "bytes": 5537,
+    "sha256": "6b77468cdfb7451d4ab6680d02ed164cc29a37d598700a23036b38b7a554e4e6",
+    "built_utc": "2026-09-18T03:28:25.054261+00:00"
+  },
+  {
+    "demo": "Vulkan/04_San Angeles",
+    "file": "GraphicsDemo.exe",
+    "bytes": 20992,
+    "sha256": "ae08fb05b9f1fac3de922447bec0946e0cba7158f4c2275c5b6011546e61628b",
+    "built_utc": "2026-09-18T03:28:31.225088+00:00"
+  },
+  {
+    "demo": "Vulkan/04_San Angeles",
+    "file": "Intro.exe",
+    "bytes": 6700,
+    "sha256": "8491cec6adc0cbf4560ac15b082d223638f9e86ff2f3830bfb2e48be370b5a87",
+    "built_utc": "2026-09-18T03:28:48.927596+00:00"
+  },
+  {
+    "demo": "Vulkan/05_Terrain",
+    "file": "GraphicsDemo.exe",
+    "bytes": 30720,
+    "sha256": "680cfc05edeab27b607d8497b9d496839385ade7a3e1736053ccd6486338384f",
+    "built_utc": "2026-09-18T03:26:34.587133+00:00"
+  },
+  {
+    "demo": "Vulkan/05_Terrain",
+    "file": "Intro.exe",
+    "bytes": 10170,
+    "sha256": "b765578277f3a589b5fe1db47ce26784ac0f92de867a65cea6b2c2e81a036933",
+    "built_utc": "2026-09-18T03:27:08.232987+00:00"
+  },
+  {
+    "demo": "Vulkan/06_Compute PostFX Color Filters",
+    "file": "GraphicsDemo.exe",
+    "bytes": 23552,
+    "sha256": "fd0d4c305663450a5a3f95bfe4a32704011a27af7cb34d7539345bdd134fbedb",
+    "built_utc": "2026-09-18T03:34:11.482599+00:00"
+  },
+  {
+    "demo": "Vulkan/06_Compute PostFX Color Filters",
+    "file": "Intro.exe",
+    "bytes": 6227,
+    "sha256": "1a1ecf5ace094849d630e70d015b3dd9e05cb905ac228f1c770bfc2662945e76",
+    "built_utc": "2026-09-18T03:34:31.375704+00:00"
+  },
+  {
+    "demo": "Vulkan/07_Himalayas",
+    "file": "GraphicsDemo.exe",
+    "bytes": 51712,
+    "sha256": "8c7233587f6bef8f36aa18277f29463cdc60136c1c51205421140f560d026522",
+    "built_utc": "2026-09-18T13:22:44.677387+00:00"
+  },
+  {
+    "demo": "Vulkan/07_Himalayas",
+    "file": "Intro.exe",
+    "bytes": 16308,
+    "sha256": "d058593b1e062051d7ae65322c0cb37c1572eb4b32cbb50b7c3c81f3dcf89070",
+    "built_utc": "2026-09-18T13:23:26.756776+00:00"
+  }
+]

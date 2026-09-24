@@ -1,0 +1,38 @@
+[
+  {
+    "Demo": "01_Skeleton",
+    "OrdinaryBytes": 7680,
+    "PackedBytes": 2049,
+    "Sha256": "986E894229F06FC181C48AD86B58D20CCCFC57F53903DED135154F0659E77A16"
+  },
+  {
+    "Demo": "02_Triangle",
+    "OrdinaryBytes": 13312,
+    "PackedBytes": 4000,
+    "Sha256": "B8814DD05726816EE6A757E40CF989E6BCB9821246E711997BDF4C82D36EC812"
+  },
+  {
+    "Demo": "03_Compute Julia4D",
+    "OrdinaryBytes": 20480,
+    "PackedBytes": 5537,
+    "Sha256": "6B77468CDFB7451D4AB6680D02ED164CC29A37D598700A23036B38B7A554E4E6"
+  },
+  {
+    "Demo": "04_San Angeles",
+    "OrdinaryBytes": 20992,
+    "PackedBytes": 6700,
+    "Sha256": "8491CEC6ADC0CBF4560AC15B082D223638F9E86FF2F3830BFB2E48BE370B5A87"
+  },
+  {
+    "Demo": "05_Terrain",
+    "OrdinaryBytes": 30720,
+    "PackedBytes": 10170,
+    "Sha256": "B765578277F3A589B5FE1DB47CE26784AC0F92DE867A65CEA6B2C2E81A036933"
+  },
+  {
+    "Demo": "06_Compute PostFX Color Filters",
+    "OrdinaryBytes": 23552,
+    "PackedBytes": 6227,
+    "Sha256": "1A1ECF5ACE094849D630E70D015B3DD9E05CB905AC228F1C770BFC2662945E76"
+  }
+]

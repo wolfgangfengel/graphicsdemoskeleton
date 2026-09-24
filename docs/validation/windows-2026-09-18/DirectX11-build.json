@@ -1,0 +1,28 @@
+[
+  {
+    "Demo": "DirectX 11\\07_Himalayas",
+    "Configuration": "Debug",
+    "Toolset": "v142",
+    "SDK": "10.0.22621.0",
+    "Built": true,
+    "ExeBytes": 24064,
+    "PackedBytes": null,
+    "Crinkler": "${REPOSITORY}\\Tools\\Crinkler3.0b\\Win64\\Crinkler.exe",
+    "CompressionMode": "SLOW",
+    "FloatBits": 32,
+    "Error": null
+  },
+  {
+    "Demo": "DirectX 11\\07_Himalayas",
+    "Configuration": "Release",
+    "Toolset": "v142",
+    "SDK": "10.0.22621.0",
+    "Built": true,
+    "ExeBytes": 22528,
+    "PackedBytes": 6660,
+    "Crinkler": "${REPOSITORY}\\Tools\\Crinkler3.0b\\Win64\\Crinkler.exe",
+    "CompressionMode": "SLOW",
+    "FloatBits": 32,
+    "Error": null
+  }
+]
